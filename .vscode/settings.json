@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [
+        "covid19_seir"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
