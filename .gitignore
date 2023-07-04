@@ -13,3 +13,5 @@
 
 # Ignore files cached by Hypothesis...
 .hypothesis/*
+
+data/*
