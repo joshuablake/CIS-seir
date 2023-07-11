@@ -4,6 +4,7 @@ from covid19_seir.util.ess import effective_sample_size
 from datetime import datetime
 from pandas import read_csv
 import csv
+import os
 
 # DECIDE WHICH SIMULATION'S DATA WE USE
 try:
