@@ -330,3 +330,60 @@ sigma_summaries = df[df["param"] == "beta[0]"]\
     pn.geom_smooth(method="lm", formula="y~x")
 )
 ```
+
+## Non-centered vs centered beta parameters
+
+Up until now, we have been looking at the non-centered beta parameters.
+However, we actually care about the centered ones.
+
+```{python}
+sd_index = 0
+for param_name, param in log_posterior._model_params.items():
+    if param_name == "beta":
+        break
+    sd_index += len(param)
+
+ncp_beta_sds = posteriors[:,:,sd_index, np.newaxis]
+assert np.abs(np.mean(ncp_beta_sds) / 50) < 0.01
+ncp_betas = posteriors[:,:,sd_index+1:sd_index+1+model.num_betas]
+assert ncp_betas.shape[2] == model.num_betas
+centred_betas = ncp_betas * ncp_beta_sds
+```
+
+```{python}
+true_centred_betas = np.empty((len(posteriors_sims), model.num_betas))
+for i, s  in enumerate(posteriors_sims):
+    true_centred_betas[i] = true_params[s]["beta"][0] * np.array(true_params[s]["beta"][1:])
+assert true_centred_betas.shape == (centred_betas.shape[0], centred_betas.shape[2])
+```
+
+```{python}
+df_centred_betas_truth = pd.DataFrame(
+    {"true": true_centred_betas.flatten()},
+    index=pd.MultiIndex.from_product(
+        [posteriors_sims, np.arange(model.num_betas) + 1],
+        names=["sim", "index"]
+    )
+).reset_index()
+```
+
+```{python}
+centered_beta_coverage = calc_coverage(
+    truth=df_centred_betas_truth,
+    posterior=centred_betas,
+    remaining_axis_names=["sim", "index"],
+    remaining_axis_labels=[posteriors_sims, np.arange(model.num_betas) + 1],
+    groups=["index"]
+)
+```
+
+
+```{python}
+(
+    pn.ggplot(centered_beta_coverage, pn.aes(colour="within")) +
+    pn.geom_point(pn.aes(y="index", x="prop", xmin="ll", xmax="ul")) +
+    pn.geom_errorbarh(pn.aes(y="param", xmin="ll", xmax="ul"), height = 0.001) +
+    pn.facet_wrap("~interval") +
+    pn.geom_vline(pn.aes(xintercept="interval/100"))
+)
+```
