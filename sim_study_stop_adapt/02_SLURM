@@ -7,8 +7,7 @@
 #SBATCH --mem=24GB
 #SBATCH -A mrc-bsu-sl2-cpu
 #SBATCH --partition=cclake-himem
-## #SBATCH --array=0-99
-#SBATCH --array=4,22,31,45,47,70,85
+#SBATCH --array=0-99
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
