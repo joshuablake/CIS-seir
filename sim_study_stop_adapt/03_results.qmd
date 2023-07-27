@@ -387,3 +387,15 @@ centered_beta_coverage = calc_coverage(
     pn.geom_vline(pn.aes(xintercept="interval/100"))
 )
 ```
+
+## Traceplots
+
+
+```{python}
+(
+    pn.ggplot(df[df["sim"] < 5]) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_grid("param~sim", scales="free_y") +
+    pn.theme(figure_size=(7, 13))
+)
+```

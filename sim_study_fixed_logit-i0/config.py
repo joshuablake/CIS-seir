@@ -60,7 +60,7 @@ PRIORS = {
     "dL": params.FixedParam(3.5),
     "dI": params.FixedParam(4),
     "pi": params.VectorParamMultiplePriors(N_STRATA, susc_betas),
-    "i0": params.Param(stats.beta(8.60, 27400)),
+    "i0": params.SampleLogitScale(params.Param(stats.beta(8.60, 27400))),
     "matrix_modifiers": params.MatrixSusceptibleChildren(params.ExpAfterPrior(stats.norm(-0.4325, 0.1174)), N_STRATA, 1),
     "psir": params.Param(stats.norm(0.048, 0.0035)),
     "beta": params.LogGaussianRWNonCentred(stats.expon(scale=1/50), model.num_betas),

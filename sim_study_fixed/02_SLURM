@@ -16,4 +16,4 @@ module load rhel7/default-ccl              # REQUIRED - loads the basic environm
 
 cd ..
 source .venv/bin/activate
-python sim_study_fixed_logit-i0/02_run_mcmc.py
+python sim_study_fixed/02_run_mcmc.py

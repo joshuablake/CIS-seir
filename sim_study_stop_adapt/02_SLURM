@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=24GB
 #SBATCH -A mrc-bsu-sl2-cpu
-#SBATCH --partition=cclake-himem
+#SBATCH --partition=icelake-himem
 #SBATCH --array=0-99
 
 ## Initialize work environment like
