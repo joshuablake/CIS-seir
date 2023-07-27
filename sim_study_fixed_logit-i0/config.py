@@ -18,8 +18,8 @@ END_DATE = date(2021, 1, 24)
 NUM_SIMS = 100
 N_STRATA = 6
 NUM_DAILY_TESTS = 15e3
-DATA_DIR = "/rds/user/jbb50/hpc-work/SEIR_model"
-INFERENCE_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/stop_adapt"
+DATA_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/sim_fixed"
+INFERENCE_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/sim_fixed_logit-i0"
 
 # TIME
 dates = date_range(START_DATE, END_DATE, freq="1D").date
@@ -60,7 +60,7 @@ PRIORS = {
     "dL": params.FixedParam(3.5),
     "dI": params.FixedParam(4),
     "pi": params.VectorParamMultiplePriors(N_STRATA, susc_betas),
-    "i0": params.SampleLogitScale(params.Param(stats.beta(8.60, 27400))),
+    "i0": params.Param(stats.beta(8.60, 27400)),
     "matrix_modifiers": params.MatrixSusceptibleChildren(params.ExpAfterPrior(stats.norm(-0.4325, 0.1174)), N_STRATA, 1),
     "psir": params.Param(stats.norm(0.048, 0.0035)),
     "beta": params.LogGaussianRWNonCentred(stats.expon(scale=1/50), model.num_betas),

@@ -1,0 +1,158 @@
+---------
+title: How are parameters but not data covered?
+jupyter: python3
+---------
+
+Getting good coverage of parameters but not of incidence.
+What is happening here?
+
+Find a simulation where parmters (except beta[0]) are inside 90% intervals but incidence is not
+
+```{python}
+lls = np.quantile(thinned_posterior, 0.25, 1)
+uls = np.quantile(thinned_posterior, 0.95, 1)
+truth = log_posterior.param_value_dict_to_array(true_params[1])
+covered = np.logical_and(lls < truth, truth < uls)
+n_covered = covered.sum(1)
+print(n_covered)
+```
+
+Actually very few which are covered, still go with one of the 30s.
+
+```{python}
+to_try = (n_covered == 30).nonzero()[0]
+df_incidence_prevalence = posterior_predictive.reset_index()
+predictions_kept = df_incidence_prevalence[df_incidence_prevalence["sim"].isin(to_try)]
+```
+
+```{python}
+(
+    pn.ggplot(predictions_kept, pn.aes("day", "incidence")) +
+    pn.geom_line(alpha = 0.3) +
+    pn.facet_grid("sim~age") +
+    pn.theme_minimal() +
+    pn.geom_line(data=true_results[true_results["sim"].isin(to_try)], colour="red")
+)
+```
+
+Incidence looks fine here?
+
+Looking back, `i0` estimates look bad.
+
+```{python}
+i0_posterior_mean = df[df["param"] == "i0"]\
+    .groupby("sim")\
+    .aggregate({"value": "mean"})
+(
+    pn.ggplot(i0_posterior_mean) +
+    pn.geom_histogram(pn.aes("value"), bins=20) +
+    pn.geom_vline(xintercept=0.00031377013054296825)
+)
+```
+
+Hmm, this block of low values looks bad!
+
+```{python}
+(i0_posterior_mean["value"] < 0.0002).sum()
+```
+
+10 runs have this too low.
+What is the coverage count for i0?
+
+```{python}
+coverage_param[coverage_param["param"] == "i0"]
+```
+
+So if we fixed these 10, all would look OK.
+
+```{python}
+i0_posterior_mean[i0_posterior_mean["value"] < 0.0002]
+```
+
+Simulation 52 is the most extreme bad example.
+Lets take a closer look at this simulation.
+
+```{python}
+(
+    pn.ggplot(df[df["sim"] == 52]) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_wrap("~param", scales="free_y") +
+    pn.theme(figure_size=(7, 13)) +
+    pn.geom_hline(pn.aes(yintercept="true"),colour="red",data=df_params)
+)
+```
+
+Clearly all over the place (red lines give true values).
+Remove the truth to see the plots better.
+
+```{python}
+(
+    pn.ggplot(df[df["sim"] == 52]) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_wrap("~param", scales="free_y") +
+    pn.theme(figure_size=(7, 13))
+)
+```
+
+Not entirely converged, but also not dreadful...
+
+Try without removing burnin and a bit less thinning
+
+```{python}
+sim52_details = pd.DataFrame(
+    posteriors[52,::10,:].flatten(),
+    index=pd.MultiIndex.from_product([range(0, posteriors.shape[1], 10), log_posterior.get_param_names()],
+                                     names=["iteration", "param"]),
+    columns=["value"]
+).reset_index()
+```
+
+```{python}
+(
+    pn.ggplot(sim52_details) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_wrap("~param", scales="free_y") +
+    pn.theme(figure_size=(7, 13)) +
+    pn.geom_hline(pn.aes(yintercept="true"),colour="red",data=df_params)
+)
+```
+
+Sim 27 is a less extreme example.
+
+```{python}
+(
+    pn.ggplot(df[df["sim"] == 27]) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_wrap("~param", scales="free_y") +
+    pn.theme(figure_size=(7, 13)) +
+    pn.geom_hline(pn.aes(yintercept="true"),colour="red",data=df_params)
+)
+```
+
+All is OK here except `i0`.
+
+```{python}
+sim27_details = pd.DataFrame(
+    posteriors[27,::10,:].flatten(),
+    index=pd.MultiIndex.from_product([range(0, posteriors.shape[1], 10), log_posterior.get_param_names()],
+                                     names=["iteration", "param"]),
+    columns=["value"]
+).reset_index()
+(
+    pn.ggplot(sim27_details) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_wrap("~param", scales="free_y") +
+    pn.theme(figure_size=(7, 13)) +
+    pn.geom_hline(pn.aes(yintercept="true"),colour="red",data=df_params)
+)
+```
+
+Zoom on i0
+
+
+```{python}
+(
+    pn.ggplot(sim27_details[sim27_details["param"] == "i0"]) +
+    pn.geom_line(pn.aes("iteration", "value"))
+)
+```

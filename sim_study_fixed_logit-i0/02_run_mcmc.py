@@ -34,7 +34,7 @@ start = log_posterior.param_value_dict_to_array({
     k: v.draw_from_prior() for k, v in PRIORS.items()
 })
 start_time = datetime.now()
-mcmc = SingleBlockAMGS(log_posterior, start, iterations=500_000, stop_adapting=10_000)
+mcmc = SingleBlockAMGS(log_posterior, start, iterations=500_000)
 mcmc_out = mcmc.run()
 end_time = datetime.now()
 print("MCMC took {} seconds".format(end_time - start_time))
