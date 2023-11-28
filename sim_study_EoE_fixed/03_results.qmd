@@ -26,7 +26,7 @@ for i in range(NUM_SIMS):
 posteriors = np.stack(list_posteriors)
 del list_posteriors
 
-with open(os.path.join(RESULTS_DIR, "sim_params.json"), "r") as fp:
+with open(os.path.join(DATA_DIR, "sim_params.json"), "r") as fp:
     true_params = json.load(fp)
 log_posterior = PROBABILISTIC_MODEL_CLASS(model, None, None, PRIORS)
 ```
@@ -173,7 +173,7 @@ Seems so.
 
 ```{python}
 true_results = read_csv(
-    os.path.join(RESULTS_DIR, "sim_output.csv"),
+    os.path.join(DATA_DIR, "sim_output.csv"),
     dtype={
         "age": "string"
     },

@@ -18,7 +18,8 @@ END_DATE = date(2021, 1, 24)
 NUM_SIMS = 100
 N_STRATA = 6
 NUM_DAILY_TESTS = 1630
-RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE"
+DATA_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE"
+RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE_fixed"
 
 # TIME
 dates = date_range(START_DATE, END_DATE, freq="1D").date

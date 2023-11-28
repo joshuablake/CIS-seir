@@ -61,6 +61,6 @@ true_results["obs_positives"] = simulate_betabinom_from_mean_theta(
 true_results["obs_prevalence"] = true_results["obs_positives"] / true_results["num_tests"]
 
 # SAVE OUTPUTS
-true_results.to_csv(os.path.join(RESULTS_DIR, "sim_output.csv"))
-with open(os.path.join(RESULTS_DIR, "sim_params.json"), 'w') as fp:
+true_results.to_csv(os.path.join(DATA_DIR, "sim_output.csv"))
+with open(os.path.join(DATA_DIR, "sim_params.json"), 'w') as fp:
     json.dump(true_params, fp)

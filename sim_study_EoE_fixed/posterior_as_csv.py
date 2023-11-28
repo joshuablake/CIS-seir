@@ -65,7 +65,7 @@ posterior_predictive = pd.DataFrame(
 # Save to csv
 posterior_predictive.to_csv(os.path.join(RESULTS_DIR, "posteriors_predictive.csv"), index=False)
 
-with open(os.path.join(RESULTS_DIR, "sim_params.json"), "r") as fp:
+with open(os.path.join(DATA_DIR, "sim_params.json"), "r") as fp:
     true_vals =  np.array([
         log_posterior.param_value_dict_to_array(p)
         for p in json.load(fp)
@@ -78,4 +78,4 @@ df_true_params = pd.DataFrame(
     ),
     columns=["true"]
 ).reset_index()
-df_true_params.to_csv(os.path.join(RESULTS_DIR, "true_vals.csv"), index=False)
+df_true_params.to_csv(os.path.join(DATA_DIR, "true_vals.csv"), index=False)
