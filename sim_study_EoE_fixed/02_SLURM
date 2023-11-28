@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sim_SEIR
-#SBATCH --output=slurm-out.txt
-#SBATCH --error=slurm-err.txt
+#SBATCH --output=slurm/out_%a.txt
+#SBATCH --error=slurm/err_%a.txt
 #SBATCH --time=06:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=24GB

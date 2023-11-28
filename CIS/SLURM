@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=CIS_SEIR
-#SBATCH --output=slurm-out.txt
-#SBATCH --error=slurm-err.txt
+#SBATCH --output=slurm/out_%a.txt
+#SBATCH --error=slurm/err_%a.txt
 #SBATCH --time=04:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=24GB
 #SBATCH -A mrc-bsu-sl2-cpu
 #SBATCH --partition=icelake-himem
-#SBATCH --array=32#0-35
+#SBATCH --array=33,35#0-35
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
