@@ -18,22 +18,8 @@ nni_out = np.empty((NUM_SIMS, N_DAYS, N_STRATA))
 prev_out = np.empty((NUM_SIMS, N_DAYS, N_STRATA))
 probabilistic_model = PROBABILISTIC_MODEL_CLASS(model, None, None, PRIORS)
 theta = np.empty(NUM_SIMS)
-beta_increments = stats.norm.rvs(size=20, random_state=rng).tolist()
 for i in range(NUM_SIMS):
-    param_vals = {
-        "pi": list(PRIORS["pi"].value_to_sample(
-            susc_beta_params[:, 0] / (susc_beta_params[:, 0] + susc_beta_params[:, 1])
-        )),
-        "i0": PRIORS["i0"].value_to_sample(8.6 / (8.6 + 27400)),
-        "matrix_modifiers": -0.4325,
-        "psir": PRIORS["psir"].value_to_sample(0.048),
-        "beta": list(np.insert(
-            beta_increments,
-            0,
-            PRIORS["beta"].sd_param.value_to_sample(1/50)
-        )),
-        "theta": PRIORS["theta"].value_to_sample(2e-5),
-    }
+    param_vals = {k: v.draw_from_prior(random_state=rng).tolist() for k, v in PRIORS.items()}
     true_params.append(param_vals)
     simulate_out = probabilistic_model.simulate(
         parameters=probabilistic_model.param_value_dict_to_array(param_vals),

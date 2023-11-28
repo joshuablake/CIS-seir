@@ -190,3 +190,7 @@ cython_debug/
 
 # Ignore files cached by Hypothesis...
 .hypothesis/*
+
+# Ignore outputs
+*.pdf
+SRS_extracts/**

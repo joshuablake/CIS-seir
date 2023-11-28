@@ -4,13 +4,10 @@ jupyter: python3
 ---------
 
 ```{python}
-import os
-os.chdir("/home/jbb50/PhD_work/SEIR_model/sim_study_fixed_logit-i0/")
 from config import *
 import json
 import pandas as pd
 import plotnine as pn
-from scipy.special import logit
 ```
 
 ```{python}
@@ -19,7 +16,7 @@ posteriors_sims = []
 failed_sims = []
 for i in range(NUM_SIMS):
     try:
-        f = os.path.join(INFERENCE_DIR, f"posterior_{i}.npy")
+        f = os.path.join(RESULTS_DIR, f"posterior_{i}.npy")
         list_posteriors.append(np.load(f, allow_pickle=True))
     except Exception as e:
         print(f"Failed loading {i}: {e}")
@@ -29,7 +26,7 @@ for i in range(NUM_SIMS):
 posteriors = np.stack(list_posteriors)
 del list_posteriors
 
-with open(os.path.join(DATA_DIR, "sim_params.json"), "r") as fp:
+with open(os.path.join(RESULTS_DIR, "sim_params.json"), "r") as fp:
     true_params = json.load(fp)
 log_posterior = PROBABILISTIC_MODEL_CLASS(model, None, None, PRIORS)
 ```
@@ -54,9 +51,7 @@ df = pd.DataFrame(
 
 true_vals = []
 for s in posteriors_sims:
-    param_set = true_params[s]
-    param_set["i0"] = logit(param_set["i0"])
-    true_vals.extend(log_posterior.param_value_dict_to_array(param_set))
+    true_vals.extend(log_posterior.param_value_dict_to_array(true_params[s]))
 df_params = pd.DataFrame(
     true_vals,
     index=pd.MultiIndex.from_product([posteriors_sims, log_posterior.get_param_names()], names=["sim", "param"]),
@@ -130,15 +125,6 @@ coverage_param = calc_coverage(df_params, thinned_posterior, ["sim", "param"], [
 ```
 
 ```{python}
-(
-    pn.ggplot(df[df["sim"] < 5]) +
-    pn.geom_line(pn.aes("iteration", "value")) +
-    pn.facet_grid("param~sim", scales="free_y") +
-    pn.theme(figure_size=(7, 13))
-)
-```
-
-```{python}
 df_summary = pd.DataFrame(
     {"posterior_mean": thinned_posterior.mean(axis=1).flatten()},
     index=pd.MultiIndex.from_product([posteriors_sims, log_posterior.get_param_names()], names=["sim", "param"])
@@ -153,7 +139,7 @@ df_summary.groupby("param")\
 ```{python}
 dfs_ess = []
 for i in posteriors_sims:
-    df_ = pd.read_csv(os.path.join(INFERENCE_DIR, f"ESS_{i}.npy"), names=["param", "ess"])
+    df_ = pd.read_csv(os.path.join(RESULTS_DIR, f"ESS_{i}.npy"), names=["param", "ess"])
     df_["sim"] = i
     dfs_ess.append(df_)
 df_ess = pd.concat(dfs_ess)
@@ -187,7 +173,7 @@ Seems so.
 
 ```{python}
 true_results = read_csv(
-    os.path.join(DATA_DIR, "sim_output.csv"),
+    os.path.join(RESULTS_DIR, "sim_output.csv"),
     dtype={
         "age": "string"
     },
@@ -358,7 +344,6 @@ for param_name, param in log_posterior._model_params.items():
     sd_index += len(param)
 
 ncp_beta_sds = posteriors[:,:,sd_index, np.newaxis]
-assert np.abs(np.mean(ncp_beta_sds) / 50) < 0.01
 ncp_betas = posteriors[:,:,sd_index+1:sd_index+1+model.num_betas]
 assert ncp_betas.shape[2] == model.num_betas
 centred_betas = ncp_betas * ncp_beta_sds

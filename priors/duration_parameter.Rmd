@@ -1,0 +1,187 @@
+---
+title: "Approximating duration distribution"
+author: "Joshua Blake"
+date: "28/07/2021"
+output:
+  pdf_document: default
+  html_document:
+    code_folding: hide
+---
+
+```{r settings,echo=F}
+if (!knitr::is_html_output()) knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r load,warning=FALSE,message=FALSE}
+library(mapfit)
+library(tidyverse)
+set.seed(1)
+draws = readRDS("~/modular-cis-sims/cisRuns/data/2023-07-31_STATS17701/draws.rds") |>
+  filter(
+    survival_prior == "Informative",
+    missed_model == "total",
+    r == 10e3,
+  ) |>
+  assertr::verify(n_distinct(name) == 1)
+
+tbl_surv_curve = draws |>
+  group_by(time) |>
+  summarise(S = mean(S)) |>
+  arrange(time) |>
+  mutate(
+    dens = c(-diff(S), S[n()]),
+    cum = cumsum(dens),
+  )
+
+theme_main = function() {
+  list(
+    theme_minimal(),
+    scale_x_continuous(
+      breaks = seq(0, 100, 14),
+      minor_breaks = seq(0, 100, 2)
+    )
+  )
+}
+```
+
+
+```{r}
+duration_summary = tbl_surv_curve |>
+  summarise(
+    moment1 = sum(time * dens),
+    moment2 = sum(time^2 * dens),
+    moment3 = sum(time^3 * dens),
+    var = moment2 - moment1^2,
+    median = min(time[cum >= 0.5]),
+  )
+
+ph_fit = phfit.3mom(duration_summary$moment1, duration_summary$moment2,
+                            duration_summary$moment3)
+
+# Check fitting hasn't gone horribly wrong
+stopifnot(all.equal(ph.mean(ph_fit), duration_summary$moment1))
+stopifnot(all.equal(ph.var(ph_fit), duration_summary$var, tolerance = 0.1))
+
+# Following text assumes that everyone starts in first state
+stopifnot(ph_fit$alpha()[1] == 1)
+```
+
+## Summary
+
+From the ATACCC data, I have previously estimated a duration of positivity as the
+time between when the expected Ct value for a person first falls below 40 to when
+it then rises above 40.
+Here, expected Ct is means the Ct we would measure if there was no noise or
+false negatives due to the swabbing and testing process.
+Independently, Sarah has estimated a clearance distribution based on a survival
+analysis of either the ONS CIS data alone or linked to pillar 2 data.
+These analyses are attempting to estimate the same distribution although apply
+different methodologies and make different assumptions.
+
+For use in a SEIR model, it would be useful to be able to approximate this
+distribution as a phase-type distribution (ie: as a Markovian process).
+Here, I apply the methods of [Osogami and Harchol-Balter (2006)](https://www.sciencedirect.com/science/article/pii/S0166531605000738),
+implemented in the [mapfit](https://CRAN.R-project.org/package=mapfit) R package,
+to do so.
+This method matches the first three moments of the distribution by constraining
+the space of phase-type distributions to those which consist of an Erlang
+distribution followed by up to two further states which cannot be cyclic.
+Osogami and Harchol-Balter argue that matching the first three moments is
+sufficient for a deterministic model such as the one we will use.
+
+The result of this is a `r ph_fit$size()`-phase distribution, plus one absorbing
+state.
+The absorbing state contains individuals who no longer test positive.
+The transition matrix of these `r ph_fit$size()+1` states is:
+
+```{r transition}
+ph_fit$Q() %>% 
+  cbind(ph_fit$xi()) %>%
+  rbind(c(rep(0, ncol(.)))) %>% 
+  as.matrix() %>%
+  t()
+```
+
+This is what the original distribution and the phase-fit look like:
+
+
+```{r curve-plot,fig.cap="Curve of survival function to use"}
+tbl_surv_curve |>
+  ggplot(aes(time, cum)) +
+  geom_line(aes(colour = "Estimate")) +
+  theme_main() +
+  stat_function(
+    aes(colour = "Phase-type fit"),
+    fun = pphase,
+    args = list(ph = ph_fit)
+  )
+```
+
+
+
+## Methods
+
+This section gives an overview of the method of [Osogami and Harchol-Balter (2006)](https://www.sciencedirect.com/science/article/pii/S0166531605000738)
+used here.
+The problem of approximating an arbitrary distribution by a phase-type distribution
+using moment-matching must trade-off (i) the number of moments matched,
+(ii) the number of states used by the approximation, (iii) the computational costs
+of calculating the approximation, and (iv) the number of distributions the
+approximation is valid for.
+Osogami and Harchol-Balter aim to approximate up to the third moment arbitrary
+distributions by a phase-type distribution (which is possible for almost all
+non-negative distributions).
+They show that a subset of phase-type distributions
+which they refer to as Erlang-Coxian (EC) distributions can almost always
+achieve this with at most one state more than optimal.
+Furthermore, a closed-form solution is available for fitting an EC distribution
+up to the third moment.
+
+A general phase-type distribution with $n$ phases is a Markov chain with $n$ states
+and an absorbing state (see figure below).
+The distribution is over the arrival times in the absorbing state.
+The parameters of the distribution are $\tau$, a probability distribution
+determining which state an individual starts in, and $\lambda_{ij}$ for $i = 1, \dots, n$
+and $j = 1, \dots, n, n+1$, a total of $\Theta(n^2)$ parameters.
+$\lambda_{ij}$ is the transition rate from state $i$ to state $j$, with $\lambda_{i,n+1}$
+giving the transition rate from state $i$ to the absorbing state.
+
+
+Osogami and Harchol-Balter define a subset of phase-type distributions which
+they refer to as Erlang-Coxian (EC) distributions (see following figure).
+An $n$-phase EC distribution is a convoluation of a $(n-2)$-phase Erlang
+distribution and two-phase acyclic phase-type distribution (with some additional
+constraints).
+This gives a total of six parameters to fit:
+
+* $n$, the number of phases.
+* $\lambda_Y$, the rate parameter of the Erlang distribution.
+* $\lambda_{X1}$, the rate parameter of the first state after the Erlang distribution.
+* $\lambda_{X2}$, the rate parameter of the second state after the Erlang distribution.
+* $p$ the probability of starting in the first state (as opposed to in the absorbing state), which allows probability mass at zero.
+* $p_x$, the probability of moving from the first state after the Erlang distribution to the second (as opposed to directly to the absorbing state).
+
+
+Osogami and Harchol-Balter prove that EC distributions have the following properties:
+
+* Any distribution that can be well-matched (defined as having the same first three moments) by an acyclic
+phase-type distribution can be well-matched for some $P$
+which is a EC distribution.
+* The number of phases used by $P$ is at most one more than the optimal number.
+* The parameters of $P$ are available in closed form.
+
+The use of an EC distribution is motivated by the result of Osogami and Harchol-Balter (2003)
+showing that acyclic phase-type distributions well-match distributions with
+large second and third moments.
+However, they require a large number of phases for distributions with small
+second moments.
+Meanwhile, an Erlang distribution has the least normalised second moment of any
+$n$-phase phase-type distribution.
+Combining these two distributions allows all variability to be well-represented.
+
+*These outputs have been provided as management information for operational planning purposes. They are provisional estimates circulated before public release. This management information should not be shared widely and should only be used for operational planning purposes. This information is not to be used publicly and ahead of being released publicly by ONS.*
+
+
+```{r scratch,eval=F}
+```
+

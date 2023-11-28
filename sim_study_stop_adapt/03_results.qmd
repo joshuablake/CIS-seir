@@ -8,6 +8,7 @@ from config import *
 import json
 import pandas as pd
 import plotnine as pn
+from scipy.special import logit
 ```
 
 ```{python}
@@ -51,7 +52,9 @@ df = pd.DataFrame(
 
 true_vals = []
 for s in posteriors_sims:
-    true_vals.extend(log_posterior.param_value_dict_to_array(true_params[s]))
+    param_set = true_params[s]
+    param_set["i0"] = logit(param_set["i0"])
+    true_vals.extend(log_posterior.param_value_dict_to_array(param_set))
 df_params = pd.DataFrame(
     true_vals,
     index=pd.MultiIndex.from_product([posteriors_sims, log_posterior.get_param_names()], names=["sim", "param"]),
@@ -132,8 +135,9 @@ df_summary = pd.DataFrame(
     .reset_index()\
     .merge(df_params)
 df_summary["bias"] = df_summary["posterior_mean"] - df_summary["true"]
+df_summary["magnitude_bias"] = abs(df_summary["posterior_mean"]) - abs(df_summary["true"])
 df_summary.groupby("param")\
-    .apply(lambda df: pd.DataFrame([[(df["bias"].values**2).sum(), (df["bias"].values / df["true"].values).mean()]], columns=["MSE", "Relative bias"]))
+    .apply(lambda df: pd.DataFrame([[(df["bias"].values**2).sum(), (df["bias"].values / df["true"].values).mean(), (df["magnitude_bias"].values / df["true"].values).mean()]], columns=["MSE", "Relative bias", "Relative magnitude bias"]))
 ```
 
 ```{python}
@@ -343,9 +347,9 @@ for param_name, param in log_posterior._model_params.items():
         break
     sd_index += len(param)
 
-ncp_beta_sds = posteriors[:,:,sd_index, np.newaxis]
+ncp_beta_sds = posteriors[:,thinned_params,sd_index, np.newaxis]
 assert np.abs(np.mean(ncp_beta_sds) / 50) < 0.01
-ncp_betas = posteriors[:,:,sd_index+1:sd_index+1+model.num_betas]
+ncp_betas = posteriors[:,thinned_params,sd_index+1:sd_index+1+model.num_betas]
 assert ncp_betas.shape[2] == model.num_betas
 centred_betas = ncp_betas * ncp_beta_sds
 ```
@@ -382,9 +386,38 @@ centered_beta_coverage = calc_coverage(
 (
     pn.ggplot(centered_beta_coverage, pn.aes(colour="within")) +
     pn.geom_point(pn.aes(y="index", x="prop", xmin="ll", xmax="ul")) +
-    pn.geom_errorbarh(pn.aes(y="param", xmin="ll", xmax="ul"), height = 0.001) +
+    pn.geom_errorbarh(pn.aes(y="index", xmin="ll", xmax="ul"), height = 0.001) +
     pn.facet_wrap("~interval") +
     pn.geom_vline(pn.aes(xintercept="interval/100"))
+)
+```
+
+Does `beta[0]` being small make coverage worse?
+
+```{python}
+lls = np.quantile(ncp_beta_sds, 0.25, 1)[:, 0]
+uls = np.quantile(ncp_beta_sds, 0.75, 1)[:, 0]
+true_sds =  np.array([true_params[s]["beta"][0] for s in posteriors_sims])
+covered = np.logical_and(lls < true_sds, true_sds < uls)
+print(
+    pn.ggplot(pn.aes(true_sds[covered])) +
+    pn.geom_histogram(bins=10)
+)
+print(
+    pn.ggplot(pn.aes(true_sds[~covered])) +
+    pn.geom_histogram(bins=10)
+)
+```
+
+```{python}
+lls = np.quantile(centred_betas, 0.25, 1)
+uls = np.quantile(centred_betas,0.75, 1)
+covered = np.logical_and(lls < true_centred_betas, true_centred_betas < uls)
+n_covered = covered.sum(1)
+(
+    pn.ggplot(pn.aes(true_sds, n_covered)) +
+    pn.geom_point() +
+    pn.geom_smooth(method = "lm")
 )
 ```
 

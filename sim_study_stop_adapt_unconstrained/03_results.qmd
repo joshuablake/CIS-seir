@@ -4,8 +4,6 @@ jupyter: python3
 ---------
 
 ```{python}
-import os
-os.chdir("/home/jbb50/PhD_work/SEIR_model/sim_study_fixed_logit-i0/")
 from config import *
 import json
 import pandas as pd
@@ -56,6 +54,8 @@ true_vals = []
 for s in posteriors_sims:
     param_set = true_params[s]
     param_set["i0"] = logit(param_set["i0"])
+    param_set["pi"] = logit(param_set["pi"])
+    param_set["beta"][0] = np.log(param_set["beta"][0])
     true_vals.extend(log_posterior.param_value_dict_to_array(param_set))
 df_params = pd.DataFrame(
     true_vals,
@@ -126,15 +126,6 @@ coverage_param = calc_coverage(df_params, thinned_posterior, ["sim", "param"], [
  pn.geom_errorbarh(pn.aes(y="param", xmin="ll", xmax="ul"), height = 0.001) +
  pn.facet_wrap("~interval") +
  pn.geom_vline(pn.aes(xintercept="interval/100"))
-)
-```
-
-```{python}
-(
-    pn.ggplot(df[df["sim"] < 5]) +
-    pn.geom_line(pn.aes("iteration", "value")) +
-    pn.facet_grid("param~sim", scales="free_y") +
-    pn.theme(figure_size=(7, 13))
 )
 ```
 
@@ -357,9 +348,8 @@ for param_name, param in log_posterior._model_params.items():
         break
     sd_index += len(param)
 
-ncp_beta_sds = posteriors[:,:,sd_index, np.newaxis]
-assert np.abs(np.mean(ncp_beta_sds) / 50) < 0.01
-ncp_betas = posteriors[:,:,sd_index+1:sd_index+1+model.num_betas]
+ncp_beta_sds = posteriors[:,thinned_params,sd_index, np.newaxis]
+ncp_betas = posteriors[:,thinned_params,sd_index+1:sd_index+1+model.num_betas]
 assert ncp_betas.shape[2] == model.num_betas
 centred_betas = ncp_betas * ncp_beta_sds
 ```
@@ -396,8 +386,20 @@ centered_beta_coverage = calc_coverage(
 (
     pn.ggplot(centered_beta_coverage, pn.aes(colour="within")) +
     pn.geom_point(pn.aes(y="index", x="prop", xmin="ll", xmax="ul")) +
-    pn.geom_errorbarh(pn.aes(y="param", xmin="ll", xmax="ul"), height = 0.001) +
+    pn.geom_errorbarh(pn.aes(y="index", xmin="ll", xmax="ul"), height = 0.001) +
     pn.facet_wrap("~interval") +
     pn.geom_vline(pn.aes(xintercept="interval/100"))
+)
+```
+
+## Traceplots
+
+
+```{python}
+(
+    pn.ggplot(df[df["sim"] < 5]) +
+    pn.geom_line(pn.aes("iteration", "value")) +
+    pn.facet_grid("param~sim", scales="free_y") +
+    pn.theme(figure_size=(7, 13))
 )
 ```
