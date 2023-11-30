@@ -7,7 +7,7 @@
 #SBATCH --mem=24GB
 #SBATCH -A mrc-bsu-sl2-cpu
 #SBATCH --partition=icelake-himem
-#SBATCH --array=0-99
+#SBATCH --array=2,19,41,50,89#0-99
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
@@ -16,4 +16,4 @@ module load rhel7/default-ccl              # REQUIRED - loads the basic environm
 
 cd ..
 source .venv/bin/activate
-python sim_study_EoE/02_run_mcmc.py
+python sim_study_EoE_fixed/02_run_mcmc.py

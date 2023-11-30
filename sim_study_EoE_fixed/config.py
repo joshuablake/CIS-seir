@@ -18,7 +18,7 @@ END_DATE = date(2021, 1, 24)
 NUM_SIMS = 100
 N_STRATA = 6
 NUM_DAILY_TESTS = 1630
-DATA_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE"
+DATA_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE_fixed"
 RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/EoE_fixed"
 
 # TIME
@@ -59,10 +59,10 @@ susc_betas = [stats.beta(*p) for p in susc_beta_params]
 PRIORS = {
     "dL": params.FixedParam(3.5),
     "dI": params.FixedParam(4),
-    "pi": params.VectorParamMultiplePriors(N_STRATA, susc_betas),
+    "pi": params.SampleLogitScale(params.VectorParamMultiplePriors(N_STRATA, susc_betas)),
     "i0": params.SampleLogitScale(params.Param(stats.beta(0.5, 1000))),
     "matrix_modifiers": params.MatrixSusceptibleChildren(params.ExpAfterPrior(stats.norm(-0.4325, 0.1174)), N_STRATA, 1),
     "psir": params.Param(stats.norm(0.048, 0.0035)),
-    "beta": params.LogGaussianRWNonCentred(stats.expon(scale=1/80), model.num_betas),
+    "beta": params.LogGaussianRWNonCentred(stats.expon(scale=1/80), model.num_betas, sample_log_scale=True),
     "theta": params.SampleLogScale(params.Param(stats.expon(scale=2e-5))),
 }

@@ -15,7 +15,7 @@ except KeyError:
     except:
         SIM_NUM = 1
         print(f"WARNING: running sim {SIM_NUM} as default")
-np.random.seed(SIM_NUM*234101)
+np.random.seed(SIM_NUM*2341)
 
 # READ THE DATA
 data = read_csv(
@@ -46,7 +46,7 @@ print("MCMC took {} seconds".format(end_time - start_time))
 np.save(os.path.join(RESULTS_DIR, f"posterior_{SIM_NUM}.npy"), mcmc_out)
 
 # ESS
-ess_out = effective_sample_size(mcmc_out[300_000:])
-with open(os.path.join(RESULTS_DIR, f"ESS_{SIM_NUM}.npy"), 'w') as ess_file:
-    wr = csv.writer(ess_file)
-    wr.writerows(zip(log_posterior.get_param_names(), ess_out))
+# ess_out = effective_sample_size(mcmc_out[300_000:])
+# with open(os.path.join(RESULTS_DIR, f"ESS_{SIM_NUM}.npy"), 'w') as ess_file:
+#     wr = csv.writer(ess_file)
+#     wr.writerows(zip(log_posterior.get_param_names(), ess_out))

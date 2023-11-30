@@ -56,7 +56,9 @@ PROBABILISTIC_MODEL_CLASS = LogPosteriorBetaBinomial
 BASE_PRIORS = {
     "dL": params.FixedParam(3.5),
     "dI": params.FixedParam(4),
-    "i0": params.Param(stats.beta(0.5, 1000)),
+    "i0": params.SampleLogitScale(
+        params.Param(stats.beta(0.5, 1000))
+    ),
     "matrix_modifiers": params.MatrixSusceptibleChildren(
         params.ExpAfterPrior(stats.norm(-0.4325, 0.1174)),
         N_STRATA,
@@ -66,6 +68,7 @@ BASE_PRIORS = {
     "beta": params.LogGaussianRWNonCentred(
         stats.expon(scale=1/80),
         forward_model.num_betas,
+        sample_log_scale=True
     ),
     "theta": params.SampleLogScale(params.Param(stats.expon(scale=2e-5))),
 }
@@ -145,8 +148,10 @@ PI_PARAMS = {
     ],
 }
 PI_PRIORS = {
-    k: params.VectorParamMultiplePriors(
-        N_STRATA, [stats.beta(*p) for p in v]
+    k: params.SampleLogitScale(
+        params.VectorParamMultiplePriors(
+            N_STRATA, [stats.beta(*p) for p in v]
+        )
     )
     for k, v in PI_PARAMS.items()
 }

@@ -35,7 +35,7 @@ df_posterior = pd.DataFrame(
 ).reset_index()
 
 # Save to csv
-df_posterior.to_csv(os.path.join(RESULTS_DIR, "posteriors_combined.csv"), index=False)
+df_posterior.to_csv(os.path.join(RESULTS_DIR, "params.csv"), index=False)
 
 # Posterior predictive incidence and prevalence
 thinned_for_predictive = range(500_000, posteriors.shape[1], 1000)
@@ -72,7 +72,7 @@ posterior_predictive = pd.DataFrame(
     )
 ).reset_index()
 # Save to csv
-posterior_predictive.to_csv(os.path.join(RESULTS_DIR, "posteriors_predictive.csv"), index=False)
+posterior_predictive.to_csv(os.path.join(RESULTS_DIR, "predictive.csv"), index=False)
 
 final_state = pd.DataFrame(
     {

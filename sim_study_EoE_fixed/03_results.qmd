@@ -8,6 +8,7 @@ from config import *
 import json
 import pandas as pd
 import plotnine as pn
+from scipy.special import expit, logit
 ```
 
 ```{python}
@@ -32,7 +33,7 @@ log_posterior = PROBABILISTIC_MODEL_CLASS(model, None, None, PRIORS)
 ```
 
 ```{python}
-thinned_params = range(300_000, posteriors.shape[1], 100)
+thinned_params = range(500_000, posteriors.shape[1], 100)
 num_sims = posteriors.shape[0]
 num_iters = posteriors.shape[1]
 # df = pd.DataFrame(
