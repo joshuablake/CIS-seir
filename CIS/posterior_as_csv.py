@@ -43,15 +43,17 @@ predicted_incidence = np.empty(
     (posteriors.shape[0], len(thinned_for_predictive), N_DAYS, N_STRATA)
 )
 predicted_prevalence = np.empty_like(predicted_incidence)
+predicted_new_pos = np.empty_like(predicted_incidence)
 final_state = np.empty(
     (posteriors.shape[0], len(thinned_for_predictive), 6 + model.P_STATES, N_STRATA)
 )
 for c in range(posteriors.shape[0]):
     for i, s in enumerate(thinned_for_predictive):
-        result = log_posterior.simulate(posteriors[c, s])[0]
+        result = log_posterior.simulate(posteriors[c, s], include_new_pcr_pos=True)[0]
         predicted_incidence[c, i] = result[0]
         predicted_prevalence[c, i] = result[1]
         final_state[c, i] = result[2]
+        predicted_new_pos[c, i] = result[3]
 dates = pd.date_range(START_DATE, END_DATE, freq="1D")
 pop = pd.read_csv(os.path.join(FILE_BASE, "data/contact_m/population.csv"))
 STRATA_NAMES = list(pop["AgeGroup"])
@@ -59,6 +61,7 @@ posterior_predictive = pd.DataFrame(
     {
         "incidence": predicted_incidence.flatten(),
         "prevalence": predicted_prevalence.flatten(),
+        "new_pcr_pos": predicted_new_pos.flatten(),
     },
     index=pd.MultiIndex.from_product(
         [
