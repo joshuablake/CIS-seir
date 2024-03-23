@@ -34,7 +34,7 @@ df_posterior = pd.DataFrame(
 df_posterior.to_csv(os.path.join(RESULTS_DIR, "posteriors_combined.csv"), index=False)
 
 # Posterior predictive incidence and prevalence
-thinned_for_predictive = range(500_000, posteriors.shape[1], 100)
+thinned_for_predictive = range(500_000, posteriors.shape[1], 1000)
 predicted_incidence = np.empty(
     (posteriors.shape[0], len(thinned_for_predictive), N_DAYS, N_STRATA)
 )
