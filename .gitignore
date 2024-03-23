@@ -1,4 +1,3 @@
-data/*
 slurm-*.txt
 **/slurm/**
 
@@ -195,3 +194,4 @@ cython_debug/
 # Ignore outputs
 *.pdf
 SRS_extracts/**
+!SRS_extracts/20230829_STATS18115/modelling_data.csv
