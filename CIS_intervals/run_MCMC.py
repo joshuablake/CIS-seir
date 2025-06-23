@@ -1,6 +1,6 @@
 # file: run_MCMC.py
 import os
-from config import setup_experiment_config, START_DATE, REGIONS, FILE_BASE
+from config import *
 from covid19_seir.mcmc.single_block_adapt_mcmc import SingleBlockAMGS
 from datetime import datetime, timedelta, date
 import numpy as np
@@ -12,23 +12,12 @@ JOB_NUM = int(sys.argv[1])
 np.random.seed(JOB_NUM * 37)
 
 # Define experiment parameters
-FULL_END_DATE = date(2021, 1, 24)
-NUM_CHAINS_PER_REGION = 4
-RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals"
 if not os.path.exists(RESULTS_DIR):
     os.makedirs(RESULTS_DIR)
 
-# Generate two-weekly cut-off dates
-cutoff_dates = pd.date_range(START_DATE + timedelta(days=14) - timedelta(days=1), FULL_END_DATE, freq="14D").date
-
-# --- NEW: SLURM ID MAPPING ---
-# Map the single SLURM_ARRAY_TASK_ID to the (cutoff, region, chain) tuple
-num_regions = len(REGIONS)
-num_cutoffs = len(cutoff_dates)
-
 chain_idx = JOB_NUM % NUM_CHAINS_PER_REGION
 region_idx = (JOB_NUM // NUM_CHAINS_PER_REGION) % num_regions
-cutoff_idx = (JOB_NUM // (NUM_CHAINS_PER_REGION * num_regions))
+cutoff_idx = (JOB_NUM // (NUM_CHAINS_PER_REGION * num_regions)) % num_cutoffs
 
 # Select the parameters for this specific job run
 run_cutoff_date = cutoff_dates[cutoff_idx]

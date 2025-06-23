@@ -15,6 +15,9 @@ import pandas as pd
 
 # Original constants that don't change
 START_DATE = date(2020, 8, 31)
+FULL_END_DATE = date(2021, 1, 24)
+NUM_CHAINS_PER_REGION = 4
+RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals"
 N_STRATA = 6
 REGIONS = [
     'North_East_England', 'North_West_England', 'Yorkshire', 'East_Midlands',
@@ -58,6 +61,14 @@ PI_PRIORS = {
     )
     for k, v in PI_PARAMS.items()
 }
+
+# Generate two-weekly cut-off dates
+cutoff_dates = pd.date_range(START_DATE + timedelta(days=14) - timedelta(days=1), FULL_END_DATE, freq="14D").date
+
+# --- NEW: SLURM ID MAPPING ---
+# Map the single SLURM_ARRAY_TASK_ID to the (cutoff, region, chain) tuple
+num_regions = len(REGIONS)
+num_cutoffs = len(cutoff_dates)
 
 
 def setup_experiment_config(end_date):
