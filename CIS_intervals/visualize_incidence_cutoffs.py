@@ -1,50 +1,21 @@
 from config import *
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-import os
 from datetime import timedelta
+from incidence_utils import (
+    load_predictive_files_by_region, compute_summary_statistics, 
+    process_data_with_gc, get_gold_standard_date, setup_plot_colors,
+    format_cutoff_date, save_plot_outputs
+)
 
-def process_single_region(region):
-    """Process all cutoff files for a single region"""
-    print(f"Processing region: {region}")
-    
-    region_data = []
-    BURN_IN_ITERATIONS = 1000000
-    
-    for cutoff_date in cutoff_dates:
-        filename = f"predictive_{region}_{cutoff_date.isoformat()}.csv"
-        filepath = os.path.join(RESULTS_DIR, filename)
-        
-        if os.path.exists(filepath):
-            print(f"  Loading {filename}...")
-            df = pd.read_csv(filepath)
-            
-            # Apply burn-in filter
-            df_filtered = df[df['iteration'] >= BURN_IN_ITERATIONS].copy()
-            
-            if len(df_filtered) > 0:
-                df_filtered['day'] = pd.to_datetime(df_filtered['day'])
-                region_data.append(df_filtered)
-            else:
-                print(f"  Warning: No post-burn-in data for {filename}")
-        else:
-            print(f"  Warning: Missing file {filename}")
-    
-    if not region_data:
-        return None
-    
-    # Combine data for this region
-    region_combined = pd.concat(region_data, ignore_index=True)
-    
+def process_single_region_summary(region_data, region):
+    """Process loaded region data to compute summary statistics"""
     # Compute summary statistics for this region
-    grouped = region_combined.groupby(['region', 'cutoff_date', 'age', 'day'])['incidence']
-    
-    region_summary = grouped.agg([
-        ('median', 'median'),
-        ('q025', lambda x: np.percentile(x, 2.5)),
-        ('q975', lambda x: np.percentile(x, 97.5))
-    ]).reset_index()
+    region_summary = compute_summary_statistics(
+        region_data, 
+        ['region', 'cutoff_date', 'age', 'day'],
+        'incidence'
+    )
     
     # Convert cutoff_date back to date objects
     region_summary['cutoff_date'] = pd.to_datetime(region_summary['cutoff_date']).dt.date
@@ -56,27 +27,11 @@ def load_and_process_data():
     """Load and process predictive CSV files one region at a time"""
     print("Processing predictive data region by region...")
     
-    all_summaries = []
-    
-    # Process one region at a time to minimize memory usage
-    for region in REGIONS:  # Limited for testing
-        region_summary = process_single_region(region)
-        
-        if region_summary is not None:
-            all_summaries.append(region_summary)
-        
-        # Force garbage collection after each region
-        import gc
-        gc.collect()
-    
-    if not all_summaries:
-        raise ValueError("No data processed successfully")
-    
-    # Combine all regional summaries
-    final_summary = pd.concat(all_summaries, ignore_index=True)
-    print(f"Total processed data: {len(final_summary)} summary rows")
-    
-    return final_summary
+    return process_data_with_gc(
+        load_predictive_files_by_region,
+        process_single_region_summary,
+        REGIONS
+    )
 
 def create_time_series_plot(summary_stats):
     """Create the 6x9 grid plot showing incidence time series"""
@@ -93,8 +48,8 @@ def create_time_series_plot(summary_stats):
     
     # Color scheme for cutoffs (earliest = red, latest = black for gold standard)
     cutoff_list = sorted(cutoff_dates)
-    colors = plt.cm.Reds(np.linspace(0.3, 0.9, len(cutoff_list)-1))  # Exclude gold standard
-    gold_standard_date = max(cutoff_dates)
+    colors = setup_plot_colors(cutoff_list)
+    gold_standard_date = get_gold_standard_date()
     
     for age_idx, age_group in enumerate(age_groups):
         for region_idx, region in enumerate(regions):
@@ -144,7 +99,7 @@ def create_time_series_plot(summary_stats):
                         # Plot median line
                         ax.plot(final_weeks['day'], final_weeks['median'], 
                                color=color, linewidth=1.5, 
-                               label=f'Cutoff {cutoff_date.strftime("%m-%d")}')
+                               label=f'Cutoff {format_cutoff_date(cutoff_date)}')
             
             # Formatting
             ax.tick_params(labelsize=6)
@@ -189,15 +144,7 @@ def main():
     fig = create_time_series_plot(summary_stats)
     
     # Save outputs
-    output_png = os.path.join(RESULTS_DIR, "incidence_cutoff_comparison.png")
-    output_pdf = os.path.join(RESULTS_DIR, "incidence_cutoff_comparison.pdf")
-    
-    fig.savefig(output_png, dpi=300, bbox_inches='tight')
-    fig.savefig(output_pdf, bbox_inches='tight')
-    
-    print(f"Saved visualization to:")
-    print(f"  {output_png}")
-    print(f"  {output_pdf}")
+    save_plot_outputs(fig, "incidence_cutoff_comparison")
     
     plt.close()
     print("Visualization complete!")

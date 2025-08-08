@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
+from incidence_utils import (
+    load_predictive_files_by_cutoff, process_data_with_gc, 
+    get_gold_standard_date, format_cutoff_date, save_plot_outputs, 
+    convert_cutoff_dates_for_plotting
+)
 
 def normalise_region_names(in_names):
     """Normalize region names to match predictive data"""
@@ -117,43 +122,14 @@ def load_poststrat_table():
     print("Sample age groups:", pop_weights['age'].unique())
     return pop_weights
 
-def process_single_cutoff(cutoff_date, pop_weights):
-    """Process all regions for a single cutoff date"""
-    print(f"Processing cutoff date: {cutoff_date}")
-    
-    cutoff_data = []
-    BURN_IN_ITERATIONS = 1000000
-    
-    for region in REGIONS:
-        filename = f"predictive_{region}_{cutoff_date.isoformat()}.csv"
-        filepath = os.path.join(RESULTS_DIR, filename)
-        
-        if os.path.exists(filepath):
-            df = pd.read_csv(filepath)
-            
-            # Apply burn-in filter
-            df_filtered = df[df['iteration'] >= BURN_IN_ITERATIONS].copy()
-            
-            if len(df_filtered) > 0:
-                df_filtered['day'] = pd.to_datetime(df_filtered['day'])
-                cutoff_data.append(df_filtered)
-            else:
-                print(f"  Warning: No post-burn-in data for {filename}")
-        else:
-            print(f"  Warning: Missing file {filename}")
-    
-    if not cutoff_data:
-        return None
-    
-    # Combine data for this cutoff
-    cutoff_combined = pd.concat(cutoff_data, ignore_index=True)
-    
+def process_single_cutoff_summary(cutoff_data, cutoff_date, pop_weights):
+    """Process loaded cutoff data with population weighting and summary computation"""
     # Apply normalization to predictive data to match population weights
-    cutoff_combined['region'] = cutoff_combined['region'].apply(normalise_region_names)
-    cutoff_combined['age'] = cutoff_combined['age'].apply(normalise_age_groups)
+    cutoff_data['region'] = cutoff_data['region'].apply(normalise_region_names)
+    cutoff_data['age'] = cutoff_data['age'].apply(normalise_age_groups)
     
     # Apply population-weighted aggregation
-    england_data = poststratify_incidence(cutoff_combined, pop_weights)
+    england_data = poststratify_incidence(cutoff_data, pop_weights)
     
     # Compute summary statistics
     summary = compute_summary_statistics_single_cutoff(england_data, cutoff_date)
@@ -238,37 +214,24 @@ def load_and_process_data(pop_weights):
     """Load and process data one cutoff at a time to minimize memory usage"""
     print("Processing data cutoff by cutoff...")
     
-    all_summaries = []
+    def data_processor(cutoff_data, cutoff_date):
+        return process_single_cutoff_summary(cutoff_data, cutoff_date, pop_weights)
     
-    # Process one cutoff at a time
-    for cutoff_date in cutoff_dates:
-        cutoff_summary = process_single_cutoff(cutoff_date, pop_weights)
-        
-        if cutoff_summary is not None:
-            all_summaries.append(cutoff_summary)
-        
-        # Force garbage collection after each cutoff
-        import gc
-        gc.collect()
-    
-    if not all_summaries:
-        raise ValueError("No data processed successfully")
-    
-    # Combine all cutoff summaries
-    final_summary = pd.concat(all_summaries, ignore_index=True)
+    final_summary = process_data_with_gc(
+        load_predictive_files_by_cutoff,
+        data_processor,
+        cutoff_dates
+    )
     
     # Convert cutoff_date back to date objects for plotting
-    final_summary['cutoff_date'] = pd.to_datetime(final_summary['cutoff_date']).dt.date
-    
-    print(f"Total processed data: {len(final_summary)} summary rows")
-    return final_summary
+    return convert_cutoff_dates_for_plotting(final_summary)
 
 def create_england_incidence_plot(summary_data):
     """Create plot with one panel per cutoff date showing England-wide incidence"""
     print("Creating England incidence visualization...")
     
     cutoff_list = sorted(cutoff_dates)
-    gold_standard_date = max(cutoff_dates)
+    gold_standard_date = get_gold_standard_date()
     
     # Set up the figure - one panel per cutoff
     n_cutoffs = len(cutoff_list)
@@ -301,7 +264,7 @@ def create_england_incidence_plot(summary_data):
             ax.fill_between(cutoff_data['day'], cutoff_data['q025'], cutoff_data['q975'], 
                           alpha=0.3, color='red', label='95% CrI (Cutoff)')
             ax.plot(cutoff_data['day'], cutoff_data['median'], 
-                   color='red', linewidth=2, label=f'Cutoff {cutoff_date.strftime("%m-%d")}')
+                   color='red', linewidth=2, label=f'Cutoff {format_cutoff_date(cutoff_date)}')
         
         if len(gold_data) > 0 and cutoff_date != gold_standard_date:
             # Plot gold standard (black) - only if not the gold standard panel
@@ -356,15 +319,7 @@ def main():
     fig = create_england_incidence_plot(summary_stats)
     
     # Save outputs
-    output_png = os.path.join(RESULTS_DIR, "england_aggregated_incidence_cutoffs.png")
-    output_pdf = os.path.join(RESULTS_DIR, "england_aggregated_incidence_cutoffs.pdf")
-    
-    fig.savefig(output_png, dpi=300, bbox_inches='tight')
-    fig.savefig(output_pdf, bbox_inches='tight')
-    
-    print(f"Saved visualization to:")
-    print(f"  {output_png}")
-    print(f"  {output_pdf}")
+    save_plot_outputs(fig, "england_aggregated_incidence_cutoffs")
     
     plt.close()
     print("England-wide incidence visualization complete!")
