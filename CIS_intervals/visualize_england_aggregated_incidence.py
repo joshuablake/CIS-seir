@@ -171,6 +171,9 @@ def poststratify_incidence(data, pop_weights):
     print(f"Pop weights regions: {sorted(pop_weights['region'].unique())}")
     print(f"Pop weights age groups: {sorted(pop_weights['age'].unique())}")
     
+    # Check original data length before merge
+    original_data_length = len(data)
+    
     # Merge with population weights
     merged = data.merge(pop_weights, on=['region', 'age'], how='inner')
     
@@ -182,6 +185,22 @@ def poststratify_incidence(data, pop_weights):
         print(f"Matching regions: {region_matches}")
         print(f"Matching age groups: {age_matches}")
         raise ValueError("No matches found between data and population weights")
+    
+    # Check if any rows were dropped during merge
+    if len(merged) < original_data_length:
+        dropped_rows = original_data_length - len(merged)
+        print(f"ERROR: {dropped_rows} rows were dropped during merge!")
+        
+        # Find which region-age combinations from data are missing in pop_weights
+        data_combinations = set(zip(data['region'], data['age']))
+        pop_combinations = set(zip(pop_weights['region'], pop_weights['age']))
+        missing_combinations = data_combinations - pop_combinations
+        
+        print(f"Missing region-age combinations in population weights:")
+        for region, age in sorted(missing_combinations):
+            print(f"  - {region}, {age}")
+        
+        raise ValueError(f"Merge dropped {dropped_rows} rows - some region-age combinations are missing from population weights")
     
     print(f"Successfully merged {len(merged)} rows")
     
