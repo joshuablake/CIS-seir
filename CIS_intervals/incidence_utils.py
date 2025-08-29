@@ -88,7 +88,7 @@ def load_predictive_files_by_cutoff(cutoff_date):
         if df is not None:
             cutoff_data.append(df)
         else:
-            print(f"  Warning: Missing or empty file {filename}")
+            print(f"  Warning: Missing or empty file {filepath}")
     
     if not cutoff_data:
         return None
