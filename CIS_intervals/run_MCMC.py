@@ -9,7 +9,7 @@ import sys
 
 # --- NEW: EXPERIMENT DEFINITION ---
 JOB_NUM = int(sys.argv[1])
-np.random.seed(JOB_NUM * 37)
+np.random.seed(JOB_NUM * 37 + 21)
 
 # Define experiment parameters
 if not os.path.exists(RESULTS_DIR):
@@ -77,5 +77,5 @@ print(f"Finished at {end_time} in {end_time - start_time}")
 # --- SAVE RESULTS ---
 # Modify filename to include the cut-off date to prevent overwriting
 filename = f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{run_chain}.npy"
-np.save(os.path.join(RESULTS_DIR, filename), results)
+np.savez(os.path.join(RESULTS_DIR, filename), results)
 print(f"Results saved to {filename}")

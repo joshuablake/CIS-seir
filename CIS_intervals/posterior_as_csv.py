@@ -34,9 +34,9 @@ list_posteriors = []
 posterior_chains = []
 
 for c in range(NUM_CHAINS_PER_REGION):
-    f = os.path.join(RESULTS_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy")
+    f = os.path.join(RESULTS_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy.npz")
     if os.path.exists(f):
-        list_posteriors.append(np.load(f, allow_pickle=True))
+        list_posteriors.append(np.load(f, allow_pickle=True)['arr_0'])
         posterior_chains.append(c)
         print(f"Loaded chain {c}", flush=True)
     else:
