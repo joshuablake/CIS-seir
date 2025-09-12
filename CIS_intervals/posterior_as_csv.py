@@ -54,26 +54,41 @@ priors["pi"] = PI_PRIORS[run_region]
 log_posterior = PROBABILISTIC_MODEL_CLASS(forward_model, None, None, priors)
 param_names = log_posterior.get_param_names()
 
-param_data = []
 thinned_params = range(0, min(p.shape[0] for p in list_posteriors), 5000)
+
+# Build index arrays that match the flattened data
+regions = []
+chains = []
+cutoff_dates = []
+iterations = []
+parameters = []
+values = []
 
 for chain_idx, posterior_array in enumerate(list_posteriors):
     chain = posterior_chains[chain_idx]
     max_iter = posterior_array.shape[0]
     valid_thinned = [s for s in thinned_params if s < max_iter]
     
-    for iteration in valid_thinned:
-        for p, param_name in enumerate(param_names):
-            param_data.append({
-                'region': run_region,
-                'chain': chain,
-                'cutoff_date': run_cutoff_date,
-                'iteration': iteration,
-                'parameter': param_name,
-                'value': posterior_array[iteration, p]
-            })
+    if valid_thinned:
+        subset = posterior_array[valid_thinned, :]
+        n_iter, n_params = subset.shape
+        
+        # Extend arrays for this chain
+        regions.extend([run_region] * (n_iter * n_params))
+        chains.extend([chain] * (n_iter * n_params))
+        cutoff_dates.extend([run_cutoff_date] * (n_iter * n_params))
+        iterations.extend(np.repeat(valid_thinned, n_params))
+        parameters.extend(param_names * n_iter)
+        values.extend(subset.flatten())
 
-df_posterior = pd.DataFrame(param_data)
+df_posterior = pd.DataFrame({
+    'region': regions,
+    'chain': chains,
+    'cutoff_date': cutoff_dates,
+    'iteration': iterations,
+    'parameter': parameters,
+    'value': values
+})
 
 # Save region/cutoff-specific parameter file
 params_filename = f"params_{run_region}_{run_cutoff_date.isoformat()}.csv"
