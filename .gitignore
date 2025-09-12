@@ -1,5 +1,7 @@
 slurm-*.txt
 **/slurm/**
+CIS_intervals/csv_err.txt
+CIS_intervals/csv_out.txt
 
 #############################
 ## QUARTO
@@ -195,3 +197,5 @@ cython_debug/
 *.pdf
 SRS_extracts/**
 !SRS_extracts/20230829_STATS18115/modelling_data.csv
+
+build
