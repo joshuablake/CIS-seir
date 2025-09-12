@@ -17,7 +17,7 @@ import pandas as pd
 START_DATE = date(2020, 8, 31)
 FULL_END_DATE = date(2021, 1, 24)
 NUM_CHAINS_PER_REGION = 4
-RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals"
+RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1"
 N_STRATA = 6
 REGIONS = [
     'North_East_England', 'North_West_England', 'Yorkshire', 'East_Midlands',
@@ -110,7 +110,7 @@ def setup_experiment_config(end_date):
         ),
         "psir": params.Param(stats.norm(0.06, 0.04)),
         "beta": params.LogGaussianRWNonCentred(
-            stats.expon(scale=1/80),
+            stats.expon(scale=1/10),
             forward_model.num_betas,
             sample_log_scale=True
         ),
