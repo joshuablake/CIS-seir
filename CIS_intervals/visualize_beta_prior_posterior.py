@@ -25,7 +25,7 @@ def load_beta0_posterior_data_by_region():
         
         # Construct filename
         params_file = os.path.join(
-            "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals",
+            "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1",
             f"params_{region}_{gold_standard_date}.csv"
         )
         
@@ -52,12 +52,12 @@ def get_beta0_prior_distribution():
     """Get the prior distribution for beta[0] from config"""
     print("Getting beta[0] prior distribution...")
     
-    # From config.py, beta prior is: LogGaussianRWNonCentred(stats.expon(scale=1/80), ...)
-    # The first parameter (stats.expon(scale=1/80)) is the prior for beta[0]
-    # This is an exponential distribution with rate=80 (scale=1/80)
-    prior_dist = stats.expon(scale=1/80)
+    # From config.py, beta prior is: LogGaussianRWNonCentred(stats.expon(scale=1/10), ...)
+    # The first parameter (stats.expon(scale=1/10)) is the prior for beta[0]
+    # This is an exponential distribution with rate=10 (scale=1/10)
+    prior_dist = stats.expon(scale=1/10)
     
-    print("Prior: Exponential(rate=80)")
+    print("Prior: Exponential(rate=10)")
     return prior_dist
 
 def create_regional_prior_posterior_plot(region_posterior_dict, prior_dist):
@@ -95,7 +95,7 @@ def create_regional_prior_posterior_plot(region_posterior_dict, prior_dist):
         posterior_samples = region_posterior_dict[region]
         
         # Plot prior distribution
-        ax.plot(x, prior_pdf, 'b-', linewidth=2, label='Prior: Exp(rate=80)', alpha=0.8)
+        ax.plot(x, prior_pdf, 'b-', linewidth=2, label='Prior: Exp(rate=10)', alpha=0.8)
         ax.fill_between(x, prior_pdf, alpha=0.2, color='blue')
         
         # Plot posterior distribution (histogram + KDE)
@@ -150,7 +150,7 @@ def create_regional_prior_posterior_plot(region_posterior_dict, prior_dist):
     # Add overall legend
     from matplotlib.patches import Patch
     legend_elements = [
-        plt.Line2D([0], [0], color='blue', linewidth=2, label='Prior: Exponential(rate=80)'),
+        plt.Line2D([0], [0], color='blue', linewidth=2, label='Prior: Exponential(rate=10)'),
         plt.Line2D([0], [0], color='red', linewidth=2, label='Posterior'),
         plt.Line2D([0], [0], color='blue', linestyle='--', alpha=0.7, label='Prior Mean'),
         plt.Line2D([0], [0], color='red', linestyle='--', alpha=0.7, label='Posterior Mean')
