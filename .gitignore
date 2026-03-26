@@ -2,6 +2,7 @@ slurm-*.txt
 **/slurm/**
 CIS_intervals/csv_err.txt
 CIS_intervals/csv_out.txt
+CIS_intervals/for_paper/**
 
 #############################
 ## QUARTO

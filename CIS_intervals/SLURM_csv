@@ -19,3 +19,6 @@ for i in $(seq 0 89); do
   echo "RUNNING $i"
   python CIS_intervals/posterior_as_csv.py $i
 done
+
+echo "COMPUTING SUMMARY STATISTICS"
+python CIS_intervals/export_summary_stats.py
