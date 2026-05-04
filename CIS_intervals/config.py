@@ -64,6 +64,9 @@ PI_PRIORS = {
 
 # Generate two-weekly cut-off dates
 cutoff_dates = pd.date_range(START_DATE + timedelta(days=14) - timedelta(days=1), FULL_END_DATE, freq="14D").date
+# append the full end date if it's not already included
+if cutoff_dates[-1] != FULL_END_DATE:
+    cutoff_dates = np.append(cutoff_dates, FULL_END_DATE)
 
 # --- NEW: SLURM ID MAPPING ---
 # Map the single SLURM_ARRAY_TASK_ID to the (cutoff, region, chain) tuple
