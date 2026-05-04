@@ -5,7 +5,7 @@
 #SBATCH --time=3:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB
-#SBATCH -A mrc-bsu-sl2-cpu
+#SBATCH -A mrc-bsu2-sl2-cpu
 #SBATCH --partition=icelake-himem
 
 ## Initialize work environment like
@@ -15,10 +15,12 @@ module load rhel7/default-ccl              # REQUIRED - loads the basic environm
 
 cd ..
 source .venv/bin/activate
-for i in $(seq 0 89); do
+#for i in $(seq 0 89); do
+for i in $(seq 90 107); do
   echo "RUNNING $i"
   python CIS_intervals/posterior_as_csv.py $i
 done
 
 echo "COMPUTING SUMMARY STATISTICS"
 python CIS_intervals/export_summary_stats.py
+python CIS_intervals/export_paper_results.py
