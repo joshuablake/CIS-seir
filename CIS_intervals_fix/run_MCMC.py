@@ -9,7 +9,12 @@ import sys
 
 # --- NEW: EXPERIMENT DEFINITION ---
 JOB_NUM = int(sys.argv[1])
-np.random.seed(JOB_NUM * 37 + 21)
+# SEIR_RETRY=k (k>0) reruns a crashed task with a different, recorded seed;
+# k=0 (default) is the original seed scheme.
+RETRY = int(os.environ.get("SEIR_RETRY", 0))
+SEED = JOB_NUM * 37 + 21 + 100_003 * RETRY
+np.random.seed(SEED)
+print(f"Seed {SEED} (retry {RETRY})")
 
 # Define experiment parameters
 # SEIR_OUT_DIR overrides the output location, for smoke tests only
