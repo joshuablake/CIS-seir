@@ -33,9 +33,10 @@ def transform(names, samples):
     sd = np.exp(samples[:, b[0]])
     q["rw_sd"] = sd
     walk = np.exp(np.cumsum(samples[:, b[1:]] * sd[:, None], axis=1))
-    q["beta_wk1"] = walk[:, 0]   # relative to week 0 (2020-08-31)
-    q["beta_wk2"] = walk[:, 1]
-    q["beta_wk4"] = walk[:, 3]
+    # relative to week 0 (2020-08-31); early cut-offs have fewer steps
+    for k in (1, 2, 4):
+        if walk.shape[1] >= k:
+            q[f"beta_wk{k}"] = walk[:, k - 1]
     return q
 
 

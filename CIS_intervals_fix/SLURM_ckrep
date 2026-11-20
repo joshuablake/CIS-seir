@@ -2,7 +2,7 @@
 #SBATCH --job-name=SEIRfix_ckrep
 #SBATCH --output=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/ckrep_out.txt
 #SBATCH --error=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/ckrep_err.txt
-#SBATCH --time=0:20:00
+#SBATCH --time=0:40:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4GB
 #SBATCH -A mrc-bsu2-sl2-cpu
@@ -15,4 +15,4 @@ module load rhel7/default-ccl
 
 cd /home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix
 source /home/jbb50/PhD_work/SEIR_model/.venv/bin/activate
-python -u checkpoint_report.py 2021-01-24 1000000
+for c in 2020-09-13 2020-09-27; do python -u checkpoint_report.py $c 1000000; done
