@@ -29,7 +29,7 @@ def main():
             filepath = os.path.join(RESULTS_DIR, filename)
             
             if os.path.exists(filepath):
-                # Load and filter for burn-in (>= 1,000,000 iterations)
+                # Load all thinned draws, INCLUDING burn-in; downstream code (figures/*.R) must drop iteration < 1e6
                 df = pd.read_csv(filepath)
                 if df is not None:
                     combined_data.append(df)
