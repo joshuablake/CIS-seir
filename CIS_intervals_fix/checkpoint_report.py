@@ -39,6 +39,9 @@ def transform(names, samples):
     return q
 
 
+# Low-rho screening (see compute_diagnostics.py): guard at log rho = -25.3
+LOG_RHO_GUARD, LOG_RHO_WARN = np.log(1e-11), -20.0
+
 rows, chain_rows = [], []
 for region in REGIONS:
     chains = []
@@ -48,10 +51,18 @@ for region in REGIONS:
             continue
         d = np.load(f)
         chains.append(d)
+        nm = list(d["param_names"])
+        th, it, lt = d["samples"][:, nm.index("theta")], d["iteration"], d["log_target"]
+        late = it >= min(burn_in_arg, int(d["last_iteration"]) // 2)
         chain_rows.append(dict(region=region, chain=c, last_iter=int(d["last_iteration"]),
                                acceptance=float(d["acceptance"]),
-                               log_target_last=float(d["log_target"][-1]),
-                               psir_last=float(d["samples"][-1, list(d["param_names"]).index("psir")])))
+                               log_target_last=float(lt[-1]),
+                               psir_last=float(d["samples"][-1, nm.index("psir")]),
+                               min_log_rho=float(th.min()),
+                               min_log_rho_late=float(th[late].min()),
+                               frac_late_below_warn=float(np.mean(th[late] < LOG_RHO_WARN)),
+                               max_log_target=float(lt.max()),
+                               frac_repeat_late=float(np.mean(np.diff(th[late]) == 0)) if late.sum() > 1 else np.nan))
     if len(chains) < 2:
         continue
     n_common = min(len(d["iteration"]) for d in chains)
@@ -72,8 +83,17 @@ for region in REGIONS:
 
 summ = pd.DataFrame(rows)
 chains_df = pd.DataFrame(chain_rows)
+chains_df["flag_invalid"] = ((chains_df.min_log_rho < LOG_RHO_GUARD) | (chains_df.max_log_target > 0) |
+                             (chains_df.frac_repeat_late > 0.01))
+chains_df["flag_low_rho"] = chains_df.frac_late_below_warn > 0.001
 summ.to_csv(os.path.join(out_dir, f"checkpoint_{cutoff}.csv"), index=False)
 chains_df.to_csv(os.path.join(out_dir, f"checkpoint_chains_{cutoff}.csv"), index=False)
 pd.set_option("display.width", 200)
 print(chains_df.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
 print(summ.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
+for col, label in [("flag_invalid", "INVALID CHAINS (below guard, log target > 0, or stuck)"),
+                   ("flag_low_rho", "LOW-RHO WARNING (>0.1% of late draws below -20)")]:
+    flagged = chains_df[chains_df[col]]
+    print(f"\n{label}: {len(flagged)}")
+    if len(flagged):
+        print(flagged.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
