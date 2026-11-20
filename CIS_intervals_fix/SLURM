@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --job-name=SEIRfix
+#SBATCH --output=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/out_%a.txt
+#SBATCH --error=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/err_%a.txt
+#SBATCH --time=36:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=24GB
+#SBATCH -A mrc-bsu2-sl2-cpu
+#SBATCH --partition=icelake-himem
+#SBATCH --array=0-395
+# Pilot: sbatch --array=360-395 SLURM ; rest: sbatch --array=0-359 SLURM
+
+## Initialize work environment like
+. /etc/profile.d/modules.sh                # Leave this line (enables the module command)
+module purge                               # Removes all modules still loaded
+module load rhel7/default-ccl              # REQUIRED - loads the basic environment
+
+FIXDIR=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix
+cd "$FIXDIR"
+source /home/jbb50/PhD_work/SEIR_model/.venv/bin/activate   # shared venv; config.py puts the fix clone first on sys.path
+python run_MCMC.py $SLURM_ARRAY_TASK_ID
