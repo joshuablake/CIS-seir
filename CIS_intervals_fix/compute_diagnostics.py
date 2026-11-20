@@ -22,7 +22,7 @@ def chain_checks(df, region, cutoff_date, burn_in):
         v, it = th.value.values, th.iteration.values
         post = v[it >= burn_in]
         # A chain with acceptance ~0.23 essentially never repeats a state over
-        # 5000 iterations; repeated consecutive thinned draws mean it is stuck.
+        # PARAM_THIN iterations; repeated consecutive thinned draws mean it is stuck.
         frac_repeat = float(np.mean(np.diff(post) == 0)) if len(post) > 1 else np.nan
         rows.append({
             "region": region, "cutoff_date": cutoff_date, "chain": chain,
@@ -54,7 +54,7 @@ def compute_rhat_ess(region, cutoff_date):
     df = pd.read_csv(params_path)
     
     # Remove burn-in: ignore first 1,000,000 iterations (numbering before thinning)
-    BURN_IN_ITERATIONS = 1000000
+    BURN_IN_ITERATIONS = BURN_IN
     df_post_burnin = df[df['iteration'] >= BURN_IN_ITERATIONS].copy()
     
     if len(df_post_burnin) == 0:

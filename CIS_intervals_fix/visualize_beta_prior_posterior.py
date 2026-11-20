@@ -6,7 +6,7 @@ import os
 from scipy import stats
 from incidence_utils import save_plot_outputs
 
-BURN_IN_ITERATIONS = 1000000
+BURN_IN_ITERATIONS = BURN_IN
 
 def load_beta0_posterior_data_by_region():
     """Load beta[0] posterior samples from gold standard run by region"""

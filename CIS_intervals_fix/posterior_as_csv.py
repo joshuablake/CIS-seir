@@ -28,13 +28,17 @@ forward_model = config["forward_model"]
 PROBABILISTIC_MODEL_CLASS = config["PROBABILISTIC_MODEL_CLASS"]
 BASE_PRIORS = config["BASE_PRIORS"]
 
+# Input/output directories (overridable for testing; default RESULTS_DIR)
+IN_DIR = os.environ.get("CSV_IN_DIR", RESULTS_DIR)
+OUT_DIR = os.environ.get("CSV_OUT_DIR", RESULTS_DIR)
+
 # --- LOAD POSTERIOR FILES FOR THIS REGION/CUTOFF ---
 print("Loading files...", flush=True)
 list_posteriors = []
 posterior_chains = []
 
 for c in range(NUM_CHAINS_PER_REGION):
-    f = os.path.join(RESULTS_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy.npz")
+    f = os.path.join(IN_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy.npz")
     if os.path.exists(f):
         list_posteriors.append(np.load(f, allow_pickle=True)['arr_0'])
         posterior_chains.append(c)
@@ -54,7 +58,8 @@ priors["pi"] = PI_PRIORS[run_region]
 log_posterior = PROBABILISTIC_MODEL_CLASS(forward_model, None, None, priors)
 param_names = log_posterior.get_param_names()
 
-thinned_params = range(0, min(p.shape[0] for p in list_posteriors), 5000)
+n_common = min(p.shape[0] for p in list_posteriors)
+thinned_params = range(0, n_common, PARAM_THIN)  # params: burn-in included
 
 # Build index arrays that match the flattened data
 regions = []
@@ -92,13 +97,16 @@ df_posterior = pd.DataFrame({
 
 # Save region/cutoff-specific parameter file
 params_filename = f"params_{run_region}_{run_cutoff_date.isoformat()}.csv"
-df_posterior.to_csv(os.path.join(RESULTS_DIR, params_filename), index=False)
+df_posterior.to_csv(os.path.join(OUT_DIR, params_filename), index=False)
 print(f"Saved parameters to {params_filename}")
 
 # --- POSTERIOR PREDICTIVE SIMULATION ---
 print("Starting posterior predictive simulation...")
 
-thinned_for_predictive = thinned_params
+# Predictive/final-state: only post-burn-in draws on the PREDICTIVE_THIN grid
+# (iterations 1,000,000 ... 9,980,000 for 10M iterations: 450 per chain), the same
+# draws the R figure filters (iteration %% 20e3 == 0 & iteration >= 1e6) select.
+thinned_for_predictive = range(BURN_IN, n_common, PREDICTIVE_THIN)
 print(f"Using {len(thinned_for_predictive)} samples per chain for prediction", flush=True)
 
 pop = pd.read_csv(os.path.join(FILE_BASE, "data/contact_m/population.csv"))
@@ -153,10 +161,10 @@ for chain_idx, posterior_array in enumerate(list_posteriors):
 # Save region/cutoff-specific output files
 posterior_predictive = pd.DataFrame(predictive_data)
 predictive_filename = f"predictive_{run_region}_{run_cutoff_date.isoformat()}.csv"
-posterior_predictive.to_csv(os.path.join(RESULTS_DIR, predictive_filename), index=False)
+posterior_predictive.to_csv(os.path.join(OUT_DIR, predictive_filename), index=False)
 print(f"Saved predictive data to {predictive_filename}", flush=True)
 
 final_state_df = pd.DataFrame(final_state_data)
 final_state_filename = f"final_state_{run_region}_{run_cutoff_date.isoformat()}.csv"
-final_state_df.to_csv(os.path.join(RESULTS_DIR, final_state_filename), index=False)
+final_state_df.to_csv(os.path.join(OUT_DIR, final_state_filename), index=False)
 print(f"Saved final state data to {final_state_filename}", flush=True)

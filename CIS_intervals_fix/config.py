@@ -17,6 +17,11 @@ import pandas as pd
 START_DATE = date(2020, 8, 31)
 FULL_END_DATE = date(2021, 1, 24)
 NUM_CHAINS_PER_REGION = 4
+
+# Posterior post-processing (iteration numbers are before thinning)
+BURN_IN = 1_000_000        # drop iterations < BURN_IN
+PARAM_THIN = 5000          # params CSVs: every 5000th iteration, burn-in included
+PREDICTIVE_THIN = 20000    # predictive/final-state: post-burn-in draws on this grid only
 RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0"
 CHECKPOINT_DIR = os.path.join(RESULTS_DIR, "checkpoints")
 # Outputs for the paper, inside this script directory

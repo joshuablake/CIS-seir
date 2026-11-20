@@ -89,5 +89,6 @@ print(f"Finished at {end_time} in {end_time - start_time}")
 # --- SAVE RESULTS ---
 # Modify filename to include the cut-off date to prevent overwriting
 filename = f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{run_chain}.npy"
-np.savez(os.path.join(OUT_DIR, filename), results)
+# Lossless compression (~10x smaller); same name and key arr_0, so np.load(...)["arr_0"] is unchanged
+np.savez_compressed(os.path.join(OUT_DIR, filename), results)
 print(f"Results saved to {filename}")

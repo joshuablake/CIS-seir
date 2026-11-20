@@ -6,13 +6,13 @@ CSVs are thinned every 5000 iterations, so brief excursions can be missed, but
 a chain trapped there (as London chain 2 in the pilot) cannot.
 """
 import os
-from config import REGIONS, cutoff_dates
+from config import REGIONS, cutoff_dates, BURN_IN
 import numpy as np
 import pandas as pd
 
 OLD = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports", "old_rho_check.csv")
-BURN = 1_000_000
+BURN = BURN_IN
 rows = []
 for cut in cutoff_dates:
     for region in REGIONS:

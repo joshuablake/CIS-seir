@@ -7,8 +7,8 @@ import numpy as np
 import os
 
 
-# Constants
-BURN_IN_ITERATIONS = 1000000
+# Constants (defined once in config.py)
+BURN_IN_ITERATIONS = BURN_IN
 
 
 def load_csv_with_burnin(filepath, cutoff_date=None):
@@ -18,8 +18,11 @@ def load_csv_with_burnin(filepath, cutoff_date=None):
     
     df = pd.read_csv(filepath)
     
-    # Apply burn-in filter
-    df_filtered = df[df['iteration'] >= BURN_IN_ITERATIONS].copy()
+    # Apply burn-in filter and keep only the PREDICTIVE_THIN grid. New predictive files
+    # contain only these draws; this also applies the same selection to older files
+    # that were simulated on the PARAM_THIN grid.
+    keep = (df['iteration'] >= BURN_IN) & (df['iteration'] % PREDICTIVE_THIN == 0)
+    df_filtered = df[keep].copy()
     
     if len(df_filtered) == 0:
         return None
