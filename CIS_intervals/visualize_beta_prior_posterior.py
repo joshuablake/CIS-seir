@@ -6,7 +6,7 @@ import os
 from scipy import stats
 from incidence_utils import save_plot_outputs
 
-BURN_IN_ITERATIONS = 1000000
+BURN_IN_ITERATIONS = BURN_IN
 
 def load_beta0_posterior_data_by_region():
     """Load beta[0] posterior samples from gold standard run by region"""
@@ -25,7 +25,7 @@ def load_beta0_posterior_data_by_region():
         
         # Construct filename
         params_file = os.path.join(
-            "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1",
+            RESULTS_DIR,
             f"params_{region}_{gold_standard_date}.csv"
         )
         

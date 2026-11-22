@@ -25,7 +25,7 @@ def create_beta0_traceplots():
     # Color palette for chains
     colors = plt.cm.Set1(np.linspace(0, 1, 10))  # Up to 10 different colors
     
-    BURN_IN_ITERATIONS = 1000000
+    BURN_IN_ITERATIONS = BURN_IN
     
     for cutoff_idx, cutoff_date in enumerate(cutoff_dates):
         for region_idx, region in enumerate(REGIONS):

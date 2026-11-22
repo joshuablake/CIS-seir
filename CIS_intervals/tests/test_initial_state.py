@@ -1,6 +1,6 @@
 """Unit checks for the omega_0 fix and the relaxed psi bound.
 
-Run from CIS_intervals_fix/:  python tests/test_initial_state.py
+Run from CIS_intervals/:  python tests/test_initial_state.py
 """
 import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))

@@ -1,8 +1,10 @@
-# CIS_intervals_fix: refit with the corrected initial state
+# CIS_intervals: fitting the SEIR model to CIS data
 
 These scripts produce the mechanistic-model results in Blake et al., "The added value of randomly sampled prevalence surveys to estimate infection incidence and transmission".
 
-They are a copy of `CIS_intervals/` (the v1.0.0 analysis) with these changes:
+## Changes since v1.0.0 (November 2026)
+
+v1.0.0 contained an error in the model's initial state. All results were refitted with these changes:
 
 - **Model fixes**, from covid19-seir after joshuablake/covid19-seir#1:
   - The initial PCR-positive state uses ω₀, the exit rate of P0. v1.0.0 used ω₁, which inflated the initial P states by about 2.3–2.9×.
@@ -15,7 +17,7 @@ They are a copy of `CIS_intervals/` (the v1.0.0 analysis) with these changes:
 
 ## Running it
 
-Run from this directory on CSD3, using the Python 3.8 venv described in the paper.
+Submit the jobs from this directory on CSD3. They use the Python 3.8 venv at the repository root (`../.venv`).
 
 1. **MCMC:** `sbatch SLURM`. The array covers 0–395: 9 regions × 11 cut-offs × 4 chains, 10M iterations each.
 2. **Posterior CSVs:** `sbatch SLURM_csv`. The array covers 0–98, one task per region and cut-off.
@@ -26,7 +28,7 @@ Run from this directory on CSD3, using the Python 3.8 venv described in the pape
 
 ## Comparing with v1.0.0
 
-`compare_old_new.py` compares parameters, incidence, nowcast accuracy and MCMC diagnostics between the original run and this refit. To get its inputs for the original run, run `compute_diagnostics.py` and `export_summary_stats.py` on the original posteriors. Use `DIAG_IN_DIR`, `DIAG_OUT_DIR`, `SEIR_RESULTS_DIR` and `SEIR_FOR_PAPER_DIR` to point them at the v1.0.0 results, so nothing is written to the original directory. Put the outputs in `reports/old_reanalysis/`.
+`compare_old_new.py` compares parameters, incidence, nowcast accuracy and MCMC diagnostics between the original run and this refit. To get its inputs for the v1.0.0 run, run `compute_diagnostics.py` and `export_summary_stats.py` on the v1.0.0 posteriors. Use `DIAG_IN_DIR`, `DIAG_OUT_DIR`, `SEIR_RESULTS_DIR` and `SEIR_FOR_PAPER_DIR` to point them at those results, writing to `reports/old_reanalysis/` (or set `OLD_DIR`). Then run `OLD_PARAMS=<v1.0.0 for_paper/params.csv.gz> python compare_old_new.py`.
 
 **Result:**
 - The paper's reported numbers change only at the third digit.
@@ -35,4 +37,4 @@ Run from this directory on CSD3, using the Python 3.8 venv described in the pape
 - The September decline in β(t) seen in v1.0.0 disappears.
 - R-hat is ≤ 1.009 for every parameter at every cut-off.
 
-Generated reports, intermediate CSVs and one-off debugging scripts from the refit are kept outside the repository.
+The refit's results are in `/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0` (`RESULTS_DIR` in `config.py`); the v1.0.0 results are in `CIS_intervals_sd0.1`. Generated reports, intermediate CSVs and one-off debugging scripts from the refit are kept outside the repository.

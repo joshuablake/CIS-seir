@@ -17,7 +17,7 @@ import numpy as np
 
 ap = argparse.ArgumentParser()
 ap.add_argument("dir"); ap.add_argument("n_tasks", type=int); ap.add_argument("task", type=int)
-ap.add_argument("--staging", default="/home/jbb50/thin_staging")
+ap.add_argument("--staging", default=os.path.expanduser("~/thin_staging"))
 ap.add_argument("--watch", type=int, default=0)
 ap.add_argument("--until-empty-hours", type=float, default=0)
 a = ap.parse_args()

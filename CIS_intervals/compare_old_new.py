@@ -1,13 +1,21 @@
+"""Compare the refit (this directory's results) with the v1.0.0 run.
+
+Inputs for the v1.0.0 run come from re-running compute_diagnostics.py and
+export_summary_stats.py on it with the DIAG_*/SEIR_* environment overrides
+(see README.md), written to OLD_DIR; OLD_PARAMS is its exported params.csv.gz.
+"""
 import pandas as pd, numpy as np, os
-H=os.path.expanduser("~/PhD_work")
-OLD_SUM=H+"/SEIR_model_fix/CIS_intervals_fix/reports/old_reanalysis/incidence_summary_statistics.csv"
-NEW_SUM=H+"/SEIR_model_fix/CIS_intervals_fix/for_paper/incidence_summary_statistics.csv"
-OLD_PAR=H+"/SEIR_model/CIS_intervals/for_paper/params.csv.gz"
-NEW_PAR=H+"/SEIR_model_fix/CIS_intervals_fix/for_paper/params.csv.gz"
-OLD_DIAG=H+"/SEIR_model_fix/CIS_intervals_fix/reports/old_reanalysis/all_diagnostics.csv"
-NEW_DIAG="/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0/all_diagnostics.csv"
-OLD_CC=H+"/SEIR_model_fix/CIS_intervals_fix/reports/old_reanalysis/chain_checks.csv"
-NEW_CC="/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0/chain_checks.csv"
+from config import RESULTS_DIR, FOR_PAPER_DIR
+HERE=os.path.dirname(os.path.abspath(__file__))
+OLD_DIR=os.environ.get("OLD_DIR", os.path.join(HERE,"reports","old_reanalysis"))
+OLD_SUM=os.path.join(OLD_DIR,"incidence_summary_statistics.csv")
+NEW_SUM=os.path.join(FOR_PAPER_DIR,"incidence_summary_statistics.csv")
+OLD_PAR=os.environ["OLD_PARAMS"]
+NEW_PAR=os.path.join(FOR_PAPER_DIR,"params.csv.gz")
+OLD_DIAG=os.path.join(OLD_DIR,"all_diagnostics.csv")
+NEW_DIAG=os.path.join(RESULTS_DIR,"all_diagnostics.csv")
+OLD_CC=os.path.join(OLD_DIR,"chain_checks.csv")
+NEW_CC=os.path.join(RESULTS_DIR,"chain_checks.csv")
 pd.set_option("display.width",220); pd.set_option("display.max_columns",30); pd.set_option("display.max_rows",200)
 expit=lambda x:1/(1+np.exp(-x))
 def par(path):

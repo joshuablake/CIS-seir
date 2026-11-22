@@ -1,7 +1,7 @@
 # file: run_MCMC.py
 import os
 from config import *
-from covid19_seir.mcmc.single_block_adapt_mcmc import SingleBlockAMGS
+from checkpointed_mcmc import CheckpointedAMGS
 from datetime import datetime, timedelta, date
 import numpy as np
 import pandas as pd
@@ -9,11 +9,18 @@ import sys
 
 # --- NEW: EXPERIMENT DEFINITION ---
 JOB_NUM = int(sys.argv[1])
-np.random.seed(JOB_NUM * 37 + 21)
+# SEIR_RETRY=k (k>0) reruns a crashed task with a different, recorded seed;
+# k=0 (default) is the original seed scheme.
+RETRY = int(os.environ.get("SEIR_RETRY", 0))
+SEED = JOB_NUM * 37 + 21 + 100_003 * RETRY
+np.random.seed(SEED)
+print(f"Seed {SEED} (retry {RETRY})")
 
 # Define experiment parameters
-if not os.path.exists(RESULTS_DIR):
-    os.makedirs(RESULTS_DIR)
+# SEIR_OUT_DIR overrides the output location, for smoke tests only
+OUT_DIR = os.environ.get("SEIR_OUT_DIR", RESULTS_DIR)
+CKPT_DIR = os.path.join(OUT_DIR, "checkpoints")
+os.makedirs(CKPT_DIR, exist_ok=True)
 
 chain_idx = JOB_NUM % NUM_CHAINS_PER_REGION
 region_idx = (JOB_NUM // NUM_CHAINS_PER_REGION) % num_regions
@@ -67,7 +74,12 @@ start_dict["psir"] = np.random.normal(loc=0.056, scale=0.01) # Using numpy direc
 start = log_posterior.param_value_dict_to_array(start_dict)
 
 # Do inference
-mcmc = SingleBlockAMGS(log_posterior, start, iterations=10_000_000)
+ITERATIONS = int(os.environ.get("SEIR_ITERATIONS", 10_000_000))  # override only for smoke tests
+checkpoint_path = os.path.join(
+    CKPT_DIR, f"ckpt_{run_region}_{run_cutoff_date.isoformat()}_{run_chain}")
+mcmc = CheckpointedAMGS(log_posterior, start, iterations=ITERATIONS,
+                        checkpoint_path=checkpoint_path,
+                        param_names=log_posterior.get_param_names())
 start_time = datetime.now()
 print(f"Starting MCMC at {start_time}")
 results = mcmc.run()
@@ -77,5 +89,6 @@ print(f"Finished at {end_time} in {end_time - start_time}")
 # --- SAVE RESULTS ---
 # Modify filename to include the cut-off date to prevent overwriting
 filename = f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{run_chain}.npy"
-np.savez(os.path.join(RESULTS_DIR, filename), results)
+# Lossless compression (~10x smaller); same name and key arr_0, so np.load(...)["arr_0"] is unchanged
+np.savez_compressed(os.path.join(OUT_DIR, filename), results)
 print(f"Results saved to {filename}")

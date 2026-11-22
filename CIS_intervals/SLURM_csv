@@ -1,26 +1,20 @@
 #!/bin/bash
-#SBATCH --job-name=CIS_SEIR
-#SBATCH --output=csv_out.txt
-#SBATCH --error=csv_err.txt
-#SBATCH --time=3:00:00
+#SBATCH --job-name=CIS_SEIR_csv
+#SBATCH --output=slurm/csv_out_%a.txt
+#SBATCH --error=slurm/csv_err_%a.txt
+#SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB
 #SBATCH -A mrc-bsu2-sl2-cpu
 #SBATCH --partition=icelake-himem
+#SBATCH --array=0-98
+# One task per (region, cut-off): JOB_NUM = region_idx + 9 * cutoff_idx (final cut-off = 90-98)
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
 module purge                               # Removes all modules still loaded
 module load rhel7/default-ccl              # REQUIRED - loads the basic environment
 
-cd ..
-source .venv/bin/activate
-#for i in $(seq 0 89); do
-for i in $(seq 90 107); do
-  echo "RUNNING $i"
-  python CIS_intervals/posterior_as_csv.py $i
-done
-
-echo "COMPUTING SUMMARY STATISTICS"
-python CIS_intervals/export_summary_stats.py
-python CIS_intervals/export_paper_results.py
+cd "$SLURM_SUBMIT_DIR"                       # submit from CIS_intervals/
+source ../.venv/bin/activate
+python -u posterior_as_csv.py $SLURM_ARRAY_TASK_ID
