@@ -28,17 +28,13 @@ forward_model = config["forward_model"]
 PROBABILISTIC_MODEL_CLASS = config["PROBABILISTIC_MODEL_CLASS"]
 BASE_PRIORS = config["BASE_PRIORS"]
 
-# Input/output directories (overridable for testing; default RESULTS_DIR)
-IN_DIR = os.environ.get("CSV_IN_DIR", RESULTS_DIR)
-OUT_DIR = os.environ.get("CSV_OUT_DIR", RESULTS_DIR)
-
 # --- LOAD POSTERIOR FILES FOR THIS REGION/CUTOFF ---
 print("Loading files...", flush=True)
 list_posteriors = []
 posterior_chains = []
 
 for c in range(NUM_CHAINS_PER_REGION):
-    f = os.path.join(IN_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy.npz")
+    f = os.path.join(RESULTS_DIR, f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{c}.npy.npz")
     if os.path.exists(f):
         list_posteriors.append(np.load(f, allow_pickle=True)['arr_0'])
         posterior_chains.append(c)
@@ -97,7 +93,7 @@ df_posterior = pd.DataFrame({
 
 # Save region/cutoff-specific parameter file
 params_filename = f"params_{run_region}_{run_cutoff_date.isoformat()}.csv"
-df_posterior.to_csv(os.path.join(OUT_DIR, params_filename), index=False)
+df_posterior.to_csv(os.path.join(RESULTS_DIR, params_filename), index=False)
 print(f"Saved parameters to {params_filename}")
 
 # --- POSTERIOR PREDICTIVE SIMULATION ---
@@ -161,10 +157,10 @@ for chain_idx, posterior_array in enumerate(list_posteriors):
 # Save region/cutoff-specific output files
 posterior_predictive = pd.DataFrame(predictive_data)
 predictive_filename = f"predictive_{run_region}_{run_cutoff_date.isoformat()}.csv"
-posterior_predictive.to_csv(os.path.join(OUT_DIR, predictive_filename), index=False)
+posterior_predictive.to_csv(os.path.join(RESULTS_DIR, predictive_filename), index=False)
 print(f"Saved predictive data to {predictive_filename}", flush=True)
 
 final_state_df = pd.DataFrame(final_state_data)
 final_state_filename = f"final_state_{run_region}_{run_cutoff_date.isoformat()}.csv"
-final_state_df.to_csv(os.path.join(OUT_DIR, final_state_filename), index=False)
+final_state_df.to_csv(os.path.join(RESULTS_DIR, final_state_filename), index=False)
 print(f"Saved final state data to {final_state_filename}", flush=True)

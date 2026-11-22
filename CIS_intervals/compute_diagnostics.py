@@ -5,47 +5,12 @@ import pandas as pd
 import os
 import sys
 
-# Low-rho screening: scipy's betabinom.logpmf is unreliable for rho < ~1e-12;
-# the likelihood guards rho < 1e-11 (log rho < -25.3) -> -inf.
-# Overrides for validation against other result sets (outputs never go to the input dir)
-IN_DIR = os.environ.get("DIAG_IN_DIR", RESULTS_DIR)
-OUT_DIR = os.environ.get("DIAG_OUT_DIR", RESULTS_DIR)
-LOG_RHO_GUARD = np.log(1e-11)   # -25.33
-LOG_RHO_WARN = -20.0
-
-
-def chain_checks(df, region, cutoff_date, burn_in):
-    """Per-chain screening: low log rho (parameter 'theta') and stuck chains."""
-    rows = []
-    for chain, g in df.groupby("chain"):
-        th = g[g.parameter == "theta"].sort_values("iteration")
-        v, it = th.value.values, th.iteration.values
-        post = v[it >= burn_in]
-        # A chain with acceptance ~0.23 essentially never repeats a state over
-        # PARAM_THIN iterations; repeated consecutive thinned draws mean it is stuck.
-        frac_repeat = float(np.mean(np.diff(post) == 0)) if len(post) > 1 else np.nan
-        rows.append({
-            "region": region, "cutoff_date": cutoff_date, "chain": chain,
-            "min_log_rho_all": v.min(), "min_log_rho_post": post.min() if len(post) else np.nan,
-            "q025_log_rho_post": np.quantile(post, 0.025) if len(post) else np.nan,
-            "frac_post_below_warn": float(np.mean(post < LOG_RHO_WARN)) if len(post) else np.nan,
-            "frac_all_below_guard": float(np.mean(v < LOG_RHO_GUARD)),
-            "frac_repeated_draws_post": frac_repeat,
-        })
-    out = pd.DataFrame(rows)
-    # invalid: chain reached the unreliable region or is stuck -> rerun with a new seed
-    out["flag_invalid"] = (out.frac_all_below_guard > 0) | (out.frac_repeated_draws_post > 0.01)
-    # low_rho: >0.1% of post-burn-in draws below -20 (posterior tail approaching the guard)
-    out["flag_low_rho"] = out.frac_post_below_warn > 0.001
-    return out
-
-
 def compute_rhat_ess(region, cutoff_date):
     """Compute Rhat and ESS for all parameters from a specific region/cutoff combination"""
     
     # Load parameter CSV file
     params_filename = f"params_{region}_{cutoff_date.isoformat()}.csv"
-    params_path = os.path.join(IN_DIR, params_filename)
+    params_path = os.path.join(RESULTS_DIR, params_filename)
     
     if not os.path.exists(params_path):
         print(f"Missing parameter file: {params_filename}")
@@ -60,8 +25,6 @@ def compute_rhat_ess(region, cutoff_date):
     if len(df_post_burnin) == 0:
         print(f"Warning: No samples remain after burn-in removal for {params_filename}")
         return None
-
-    checks = chain_checks(df, region, cutoff_date, BURN_IN_ITERATIONS)
     
     # Get unique parameters and chains
     parameters = df_post_burnin['parameter'].unique()
@@ -102,17 +65,16 @@ def compute_rhat_ess(region, cutoff_date):
             'n_samples_per_chain': param_array.shape[1]
         })
     
-    return pd.DataFrame(diagnostics), checks
+    return pd.DataFrame(diagnostics)
 
 def main():
-    n_jobs = len(REGIONS) * len(cutoff_dates)
+    n_jobs = len(REGIONS) * len(cutoff_dates)  # was 90, which skipped the final cut-off
     print(f"Computing diagnostics for all jobs (0-{n_jobs - 1})...")
     
     num_regions = len(REGIONS)
     num_cutoffs = len(cutoff_dates)
     
     all_diagnostics = []
-    all_checks = []
     
     # Loop through all jobs 0-89
     for JOB_NUM in range(n_jobs):
@@ -124,12 +86,10 @@ def main():
         run_cutoff_date = cutoff_dates[cutoff_idx]
         
         # Compute diagnostics
-        result = compute_rhat_ess(run_region, run_cutoff_date)
-
-        if result is not None:
-            diagnostics_df, checks_df = result
+        diagnostics_df = compute_rhat_ess(run_region, run_cutoff_date)
+        
+        if diagnostics_df is not None:
             all_diagnostics.append(diagnostics_df)
-            all_checks.append(checks_df)
         else:
             print(f"  Failed to compute diagnostics for job {JOB_NUM}")
         
@@ -141,7 +101,7 @@ def main():
         combined_diagnostics = pd.concat(all_diagnostics, ignore_index=True)
         
         # Save combined results
-        output_path = os.path.join(OUT_DIR, "all_diagnostics.csv")
+        output_path = os.path.join(RESULTS_DIR, "all_diagnostics.csv")
         combined_diagnostics.to_csv(output_path, index=False)
         print(f"\nSaved all diagnostics to all_diagnostics.csv")
         
@@ -161,21 +121,6 @@ def main():
         print(f"\nLowest ESS bulk values:")
         worst_ess = combined_diagnostics.nsmallest(5, 'ess_bulk')[['region', 'cutoff_date', 'parameter', 'ess_bulk']]
         print(worst_ess.to_string(index=False))
-
-        # Low-rho / stuck-chain screening
-        checks = pd.concat(all_checks, ignore_index=True)
-        checks.to_csv(os.path.join(OUT_DIR, "chain_checks.csv"), index=False)
-        print(f"\nChain checks (saved to chain_checks.csv): {len(checks)} chains")
-        print(f"Chains ever below log rho guard ({LOG_RHO_GUARD:.2f}): {(checks.frac_all_below_guard > 0).sum()}")
-        print(f"Chains with post-burn-in draws below {LOG_RHO_WARN}: {(checks.frac_post_below_warn > 0).sum()}")
-        print(f"Chains with >1% repeated thinned draws (stuck): {(checks.frac_repeated_draws_post > 0.01).sum()}")
-        print(f"Lowest post-burn-in log rho: {checks.min_log_rho_post.min():.2f}")
-        for col, label in [("flag_invalid", "INVALID CHAINS (rerun with SEIR_RETRY)"),
-                           ("flag_low_rho", "LOW-RHO WARNING (>0.1% of draws below -20)")]:
-            flagged = checks[checks[col]]
-            print(f"{label}: {len(flagged)}")
-            if len(flagged):
-                print(flagged.to_string(index=False))
     else:
         print("No diagnostics computed successfully")
 
