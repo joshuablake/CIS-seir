@@ -1,0 +1,3 @@
+debug/
+reports/quick_check/trajectories_draws.csv.gz
+reports/quick_check/per_draw_summary.csv

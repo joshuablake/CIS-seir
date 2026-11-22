@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=SEIRfix_R
+#SBATCH --output=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/R_out_%a.txt
+#SBATCH --error=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/R_err_%a.txt
+#SBATCH --time=6:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=60GB
+#SBATCH -A mrc-bsu2-sl2-cpu
+#SBATCH --partition=icelake-himem
+#SBATCH --array=0-1
+# 0 = paper_ref_pnas_old (original runs), 1 = paper_ref_pnas_new (omega0 refit)
+. /etc/profile.d/modules.sh
+module purge
+module load rhel7/default-ccl R/4.2.0-icelake
+V=( old new ); D=/home/jbb50/PhD_work/paper_ref_pnas_${V[$SLURM_ARRAY_TASK_ID]}
+cd "$D"
+for s in incidence_nums incidence incidence_cutoffs children rw gof; do
+  echo "===== $s $(date)"
+  Rscript figures/$s.R > figures/$s.log 2>&1; echo "exit $?"
+done

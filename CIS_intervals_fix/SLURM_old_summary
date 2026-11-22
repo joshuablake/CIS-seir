@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=SEIRfix_oldsum
+#SBATCH --output=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/oldsum_out.txt
+#SBATCH --error=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix/slurm/oldsum_err.txt
+#SBATCH --time=3:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=24GB
+#SBATCH -A mrc-bsu2-sl2-cpu
+#SBATCH --partition=icelake-himem
+# Re-analysis of the ORIGINAL sd0.1 run with the refit's filters (read-only; outputs go to the fix clone)
+. /etc/profile.d/modules.sh; module purge; module load rhel7/default-ccl
+FIXDIR=/home/jbb50/PhD_work/SEIR_model_fix/CIS_intervals_fix; cd "$FIXDIR"
+source /home/jbb50/PhD_work/SEIR_model/.venv/bin/activate
+OUT=$FIXDIR/reports/old_reanalysis; mkdir -p $OUT
+export SEIR_RESULTS_DIR=/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1 SEIR_FOR_PAPER_DIR=$OUT
+DIAG_OUT_DIR=$OUT python -u compute_diagnostics.py
+python -u export_summary_stats.py

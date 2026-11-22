@@ -22,10 +22,11 @@ NUM_CHAINS_PER_REGION = 4
 BURN_IN = 1_000_000        # drop iterations < BURN_IN
 PARAM_THIN = 5000          # params CSVs: every 5000th iteration, burn-in included
 PREDICTIVE_THIN = 20000    # predictive/final-state: post-burn-in draws on this grid only
-RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0"
+# SEIR_RESULTS_DIR / SEIR_FOR_PAPER_DIR overrides are for read-only re-analysis of other runs (e.g. the original sd0.1 run)
+RESULTS_DIR = os.environ.get("SEIR_RESULTS_DIR", "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0")
 CHECKPOINT_DIR = os.path.join(RESULTS_DIR, "checkpoints")
 # Outputs for the paper, inside this script directory
-FOR_PAPER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "for_paper")
+FOR_PAPER_DIR = os.environ.get("SEIR_FOR_PAPER_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "for_paper"))
 N_STRATA = 6
 REGIONS = [
     'North_East_England', 'North_West_England', 'Yorkshire', 'East_Midlands',
