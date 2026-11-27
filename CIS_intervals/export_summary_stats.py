@@ -134,7 +134,7 @@ def main():
     
     # Save as gzipped CSV
     # 1. Setup output directory
-    output_dir = "for_paper"
+    output_dir = FOR_PAPER_DIR
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Created directory: {output_dir}")

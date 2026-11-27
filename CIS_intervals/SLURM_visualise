@@ -1,24 +1,23 @@
 #!/bin/bash
-#SBATCH --job-name=CIS_SEIR
-#SBATCH --output=csv_out.txt
-#SBATCH --error=csv_err.txt
-#SBATCH --time=3:00:00
+#SBATCH --job-name=CIS_SEIR_vis
+#SBATCH --output=slurm/vis_out.txt
+#SBATCH --error=slurm/vis_err.txt
+#SBATCH --time=6:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=30GB
-#SBATCH -A mrc-bsu-sl2-cpu
+#SBATCH --mem=24GB
+#SBATCH -A mrc-bsu2-sl2-cpu
 #SBATCH --partition=icelake-himem
-#SBATCH --mail-user=joshua.blake@mrc-bsu.cam.ac.uk
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
 module purge                               # Removes all modules still loaded
 module load rhel7/default-ccl              # REQUIRED - loads the basic environment
 
+cd "$SLURM_SUBMIT_DIR"                       # submit from CIS_intervals/
 source ../.venv/bin/activate
-python compute_diagnostics.py
-python visualize_age_aggregated_incidence.py
-python visualize_incidence_cutoffs.py
-python visualize_beta_prior_posterior.py
-python visualize_regional_incidence_error.py
-python visualize_england_aggregated_incidence.py
-python visualize_regional_incidence.py
+python -u visualize_age_aggregated_incidence.py
+python -u visualize_incidence_cutoffs.py
+python -u visualize_beta_prior_posterior.py
+python -u visualize_regional_incidence_error.py
+python -u visualize_england_aggregated_incidence.py
+python -u visualize_regional_incidence.py

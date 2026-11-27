@@ -9,11 +9,15 @@ import sys
 
 # --- NEW: EXPERIMENT DEFINITION ---
 JOB_NUM = int(sys.argv[1])
-np.random.seed(JOB_NUM * 37 + 21)
+# SEIR_RETRY=k (k>0) reruns a crashed task with a different, recorded seed;
+# k=0 (default) is the original seed scheme.
+RETRY = int(os.environ.get("SEIR_RETRY", 0))
+SEED = JOB_NUM * 37 + 21 + 100_003 * RETRY
+np.random.seed(SEED)
+print(f"Seed {SEED} (retry {RETRY})")
 
 # Define experiment parameters
-if not os.path.exists(RESULTS_DIR):
-    os.makedirs(RESULTS_DIR)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 chain_idx = JOB_NUM % NUM_CHAINS_PER_REGION
 region_idx = (JOB_NUM // NUM_CHAINS_PER_REGION) % num_regions
@@ -77,5 +81,6 @@ print(f"Finished at {end_time} in {end_time - start_time}")
 # --- SAVE RESULTS ---
 # Modify filename to include the cut-off date to prevent overwriting
 filename = f"posterior_{run_region}_{run_cutoff_date.isoformat()}_{run_chain}.npy"
-np.savez(os.path.join(RESULTS_DIR, filename), results)
+# Lossless compression (~10x smaller); same name and key arr_0, so np.load(...)["arr_0"] is unchanged
+np.savez_compressed(os.path.join(RESULTS_DIR, filename), results)
 print(f"Results saved to {filename}")

@@ -19,7 +19,7 @@ def compute_rhat_ess(region, cutoff_date):
     df = pd.read_csv(params_path)
     
     # Remove burn-in: ignore first 1,000,000 iterations (numbering before thinning)
-    BURN_IN_ITERATIONS = 1000000
+    BURN_IN_ITERATIONS = BURN_IN
     df_post_burnin = df[df['iteration'] >= BURN_IN_ITERATIONS].copy()
     
     if len(df_post_burnin) == 0:
@@ -68,7 +68,8 @@ def compute_rhat_ess(region, cutoff_date):
     return pd.DataFrame(diagnostics)
 
 def main():
-    print("Computing diagnostics for all jobs (0-89)...")
+    n_jobs = len(REGIONS) * len(cutoff_dates)  # was 90, which skipped the final cut-off
+    print(f"Computing diagnostics for all jobs (0-{n_jobs - 1})...")
     
     num_regions = len(REGIONS)
     num_cutoffs = len(cutoff_dates)
@@ -76,7 +77,7 @@ def main():
     all_diagnostics = []
     
     # Loop through all jobs 0-89
-    for JOB_NUM in range(90):
+    for JOB_NUM in range(n_jobs):
         # Use same job mapping as posterior_as_csv.py
         region_idx = JOB_NUM % num_regions  
         cutoff_idx = (JOB_NUM // num_regions) % num_cutoffs
@@ -93,7 +94,7 @@ def main():
             print(f"  Failed to compute diagnostics for job {JOB_NUM}")
         
         if (JOB_NUM + 1) % 10 == 0:
-            print(f"Completed {JOB_NUM+1} of 90 jobs")
+            print(f"Completed {JOB_NUM+1} of {n_jobs} jobs")
     
     if all_diagnostics:
         # Combine all diagnostics

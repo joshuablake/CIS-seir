@@ -54,7 +54,8 @@ priors["pi"] = PI_PRIORS[run_region]
 log_posterior = PROBABILISTIC_MODEL_CLASS(forward_model, None, None, priors)
 param_names = log_posterior.get_param_names()
 
-thinned_params = range(0, min(p.shape[0] for p in list_posteriors), 5000)
+n_common = min(p.shape[0] for p in list_posteriors)
+thinned_params = range(0, n_common, PARAM_THIN)  # params: burn-in included
 
 # Build index arrays that match the flattened data
 regions = []
@@ -98,7 +99,10 @@ print(f"Saved parameters to {params_filename}")
 # --- POSTERIOR PREDICTIVE SIMULATION ---
 print("Starting posterior predictive simulation...")
 
-thinned_for_predictive = thinned_params
+# Predictive/final-state: only post-burn-in draws on the PREDICTIVE_THIN grid
+# (iterations 1,000,000 ... 9,980,000 for 10M iterations: 450 per chain), the same
+# draws the R figure filters (iteration %% 20e3 == 0 & iteration >= 1e6) select.
+thinned_for_predictive = range(BURN_IN, n_common, PREDICTIVE_THIN)
 print(f"Using {len(thinned_for_predictive)} samples per chain for prediction", flush=True)
 
 pop = pd.read_csv(os.path.join(FILE_BASE, "data/contact_m/population.csv"))

@@ -7,13 +7,14 @@
 #SBATCH --mem=24GB
 #SBATCH -A mrc-bsu2-sl2-cpu
 #SBATCH --partition=icelake-himem
-#SBATCH --array=0-359
+#SBATCH --array=0-395
+# Final cut-off only (2021-01-24): sbatch --array=360-395 SLURM
 
 ## Initialize work environment like
 . /etc/profile.d/modules.sh                # Leave this line (enables the module command)
 module purge                               # Removes all modules still loaded
 module load rhel7/default-ccl              # REQUIRED - loads the basic environment
 
-cd ..
-source .venv/bin/activate
-python CIS_intervals/run_MCMC.py $SLURM_ARRAY_TASK_ID
+cd "$SLURM_SUBMIT_DIR"                       # submit from CIS_intervals/
+source ../.venv/bin/activate
+python run_MCMC.py $SLURM_ARRAY_TASK_ID

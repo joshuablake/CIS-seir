@@ -3,7 +3,7 @@ import os, sys
 
 # File location
 FILE_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-sys.path.append(FILE_BASE)
+sys.path.insert(0, FILE_BASE)  # use this repository's covid19_seir submodule, not an installed copy
 
 from covid19_seir.models import params, prevalence_model
 from covid19_seir.models.logPDF_prev import LogPosteriorBetaBinomial
@@ -17,7 +17,14 @@ import pandas as pd
 START_DATE = date(2020, 8, 31)
 FULL_END_DATE = date(2021, 1, 24)
 NUM_CHAINS_PER_REGION = 4
-RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_sd0.1"
+
+# Posterior post-processing (iteration numbers are before thinning)
+BURN_IN = 1_000_000        # drop iterations < BURN_IN
+PARAM_THIN = 5000          # params CSVs: every 5000th iteration, burn-in included
+PREDICTIVE_THIN = 20000    # predictive/final-state: post-burn-in draws on this grid only
+RESULTS_DIR = "/rds/user/jbb50/hpc-work/SEIR_model/CIS_intervals_fix_omega0"  # results of the Nov 2026 refit
+# Outputs for the paper, inside this script directory
+FOR_PAPER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "for_paper")
 N_STRATA = 6
 REGIONS = [
     'North_East_England', 'North_West_England', 'Yorkshire', 'East_Midlands',
