@@ -1,14 +1,28 @@
 {
   "title": "CIS-seir: fitting an age-structured SEIR model to ONS Coronavirus Infection Survey data",
   "upload_type": "software",
-  "description": "<p>Scripts used to fit the covid19-seir model to RT-PCR prevalence data from the ONS Coronavirus (COVID-19) Infection Survey, including the final analyses (CIS_intervals/) and simulation study for Blake et al., 'The added value of randomly sampled prevalence surveys to estimate infection incidence and transmission'. The model itself is in the covid19-seir repository (git submodule, version v1.0.0), archived separately on Zenodo. The CIS data are not included; they are available via the ONS Secure Research Service.</p>",
+  "description": "<p>Scripts used to fit the covid19-seir model to RT-PCR prevalence data from the ONS Coronavirus (COVID-19) Infection Survey, including the final analyses (CIS_intervals/) and simulation study for Blake et al., 'The added value of randomly sampled prevalence surveys to estimate infection incidence and transmission'. Version 1.1.0 corrects an error in the model's initial state (see CIS_intervals/README.md) and contains the analyses reported in the paper. The model itself is in the covid19-seir repository (git submodule, version v1.1.0), archived separately on Zenodo. The CIS data are not included; they are available via the ONS Secure Research Service.</p>",
   "creators": [
-    {"name": "Blake, Joshua", "affiliation": "MRC Biostatistics Unit, University of Cambridge"}
+    {
+      "name": "Blake, Joshua",
+      "affiliation": "MRC Biostatistics Unit, University of Cambridge"
+    }
   ],
   "license": "MIT",
-  "keywords": ["SARS-CoV-2", "COVID-19", "SEIR model", "Coronavirus Infection Survey", "incidence", "MCMC"],
+  "keywords": [
+    "SARS-CoV-2",
+    "COVID-19",
+    "SEIR model",
+    "Coronavirus Infection Survey",
+    "incidence",
+    "MCMC"
+  ],
   "related_identifiers": [
-    {"identifier": "https://github.com/joshuablake/covid19-seir/tree/v1.0.0", "relation": "requires", "resource_type": "software"}
+    {
+      "identifier": "https://github.com/joshuablake/covid19-seir/tree/v1.1.0",
+      "relation": "requires",
+      "resource_type": "software"
+    }
   ],
   "access_right": "open"
 }
